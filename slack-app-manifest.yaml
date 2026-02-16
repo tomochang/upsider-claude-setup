@@ -1,0 +1,22 @@
+display_information:
+  name: Claude Code MCP
+  description: Claude Code から Slack を操作するための MCP サーバー
+  background_color: "#1e1e2e"
+oauth_config:
+  scopes:
+    user:
+      - channels:history
+      - channels:read
+      - chat:write
+      - groups:history
+      - groups:read
+      - im:history
+      - im:read
+      - mpim:history
+      - mpim:read
+      - search:read
+      - users:read
+settings:
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
