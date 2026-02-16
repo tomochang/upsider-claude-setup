@@ -23,7 +23,7 @@ cd ~/upsider-setup && claude
 
 **Step 2.** 以下をコピペして実行:
 ```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force; irm https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main/bootstrap-win.ps1 | iex
+irm https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main/bootstrap-win.ps1 | iex
 ```
 
 **Step 3.** 「準備完了！」と表示されたら、続けて実行:

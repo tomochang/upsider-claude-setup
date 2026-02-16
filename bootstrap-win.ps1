@@ -23,13 +23,6 @@ if (-not $isAdmin) {
     return
 }
 
-# --- ExecutionPolicy ---
-try {
-    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-} catch {
-    Write-Host "ExecutionPolicy の設定に失敗しました: $_" -ForegroundColor Yellow
-}
-
 Write-Host ""
 Write-Host "=========================================="
 Write-Host " UPSIDER Claude Code セットアップ"
@@ -101,7 +94,6 @@ Write-Host " あとは Claude が全部やります。"
 Write-Host "=========================================="
 Write-Host ""
 Write-Host "--- トラブルシューティング ---" -ForegroundColor DarkGray
-Write-Host " 'スクリプトの実行が無効': Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force" -ForegroundColor DarkGray
 Write-Host " '管理者権限': PowerShellを右クリック →「管理者として実行」" -ForegroundColor DarkGray
 Write-Host " 'claude が見つからない': PowerShellを再起動してから再実行" -ForegroundColor DarkGray
 Write-Host ""
