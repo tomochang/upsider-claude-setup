@@ -4,34 +4,39 @@ Claude Code + Ghostty + tmux の開発環境を自動セットアップ。
 
 ## クイックスタート
 
-### Mac
+### Mac — ターミナルで3つコピペするだけ
 
 ```bash
+# 1. ブートストラップ（Claude CLIインストール + ワークスペース作成）
 curl -fsSL https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main/bootstrap-mac.sh | bash
-```
 
-### Windows (PowerShell を管理者で実行)
-
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-irm https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main/bootstrap-win.ps1 | iex
-```
-
-初回は Claude CLI インストール後に PowerShell 再起動を求められます。再起動後にもう一度同じコマンドを実行してください。
-
-### 起動
-
-Mac:
-```bash
+# 2. Claude を起動
 cd ~/upsider-setup && claude
+
+# 3. Claude に伝える（これだけ手入力）
+セットアップを開始して
 ```
 
-Windows (PowerShell を**再起動してから**):
+### Windows — PowerShellで3つコピペするだけ
+
+**Step 1.** PowerShell を**右クリック →「管理者として実行」**で開く
+
+**Step 2.** 以下をコピペして実行:
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force; irm https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main/bootstrap-win.ps1 | iex
+```
+
+**Step 3.** 「準備完了！」と表示されたら、続けて実行:
 ```powershell
 cd ~\upsider-setup; claude
 ```
 
-Claude が起動したら `セットアップを開始して` と入力。あとは Claude が全部やります。
+**Step 4.** Claude が起動したら入力:
+```
+セットアップを開始して
+```
+
+あとは Claude が全部やります。
 
 セットアップ完了後の標準状態:
 
