@@ -38,38 +38,20 @@ Write-Host ""
 
 # --- Claude CLI (native) ---
 if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
-    Write-Host "Claude CLI をインストール中..."
-    irm https://claude.ai/install.ps1 | iex
-
-    # インストール後、PATH をリフレッシュ（レジストリから再読み込み）
-    $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
-    $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
-    $env:PATH = "$userPath;$machinePath"
-
-    # それでも見つからない場合、一般的なインストール先を直接追加
-    if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
-        $claudePaths = @(
-            "$env:USERPROFILE\.claude\bin",
-            "$env:LOCALAPPDATA\Programs\claude-code",
-            "$env:LOCALAPPDATA\AnthropicClaude\bin",
-            "$env:ProgramFiles\Claude\bin"
-        )
-        foreach ($p in $claudePaths) {
-            if (Test-Path "$p\claude.exe") {
-                $env:PATH = "$p;$env:PATH"
-                break
-            }
-        }
-    }
     Write-Host ""
+    Write-Host "=========================================" -ForegroundColor Cyan
+    Write-Host " Claude CLI を手動でインストールしてください" -ForegroundColor Cyan
+    Write-Host "=========================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host " 1. ブラウザで https://claude.ai/download を開く"
+    Write-Host " 2. Windows版をダウンロードしてインストール"
+    Write-Host " 3. インストール完了後、PowerShellを再起動"
+    Write-Host " 4. もう一度このスクリプトを実行"
+    Write-Host ""
+    Write-Host "=========================================" -ForegroundColor Cyan
+    exit 0
 }
-
-if (Get-Command claude -ErrorAction SilentlyContinue) {
-    Write-Host "Claude CLI: OK" -ForegroundColor Green
-} else {
-    Write-Host "Claude CLI: インストール済みですが、PATHに反映されていません。" -ForegroundColor Yellow
-    Write-Host "  → このスクリプト完了後、PowerShellを再起動してください。" -ForegroundColor Yellow
-}
+Write-Host "Claude CLI: OK" -ForegroundColor Green
 
 # --- セットアップワークスペース ---
 $setupDir = "$env:USERPROFILE\upsider-setup"

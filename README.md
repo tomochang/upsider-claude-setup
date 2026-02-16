@@ -10,7 +10,10 @@ Claude Code + Ghostty + tmux の開発環境を自動セットアップ。
 curl -fsSL https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main/bootstrap-mac.sh | bash
 ```
 
-### Windows (PowerShell を管理者で実行)
+### Windows
+
+1. https://claude.ai/download から Claude CLI をインストール
+2. PowerShell を**管理者で**再起動して実行:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
