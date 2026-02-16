@@ -13,11 +13,17 @@ REPO_RAW=https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main
 
 ## バージョン定義
 
-以下のバージョンをこのセットアップ全体で使う:
+`versions.env` から取得する（単一管理）:
+```bash
+curl -fsSL "${REPO_RAW}/versions.env" -o /tmp/versions.env && source /tmp/versions.env
+```
 
+フォールバック値（`versions.env` が取得できない場合のみ使用）:
 - **Node.js**: 24.13.0
 - **NVM**: 0.40.4
 - **Python**: 3.14
+
+以降すべてのコマンドで `$NODE_VERSION`, `$NVM_VERSION`, `$PYTHON_VERSION` 変数を使う。
 
 ---
 
@@ -211,10 +217,17 @@ claude login
 
 ### チェックポイント 2
 
+Mac:
 ```bash
-brew --version 2>/dev/null | head -1 || echo "brew: N/A (Windows)"
+brew --version 2>/dev/null | head -1
 claude --version
 echo "✅ 基盤ツール OK"
+```
+
+Windows:
+```powershell
+claude --version
+Write-Host "✅ 基盤ツール OK"
 ```
 
 ---
@@ -240,6 +253,8 @@ git lfs install
 Windows:
 ```powershell
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { winget install GitHub.cli --accept-source-agreements --accept-package-agreements }
+if (-not (Get-Command git-lfs -ErrorAction SilentlyContinue)) { winget install GitHub.GitLFS --accept-source-agreements --accept-package-agreements }
+git lfs install
 ```
 
 ### 3.3 GitHub 認証
@@ -324,12 +339,12 @@ git --version && gh auth status && echo "✅ Git & GitHub OK"
 
 ```bash
 if [ ! -s "$HOME/.nvm/nvm.sh" ]; then
-  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+  curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh" | bash
 fi
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-node --version 2>/dev/null | grep -q "v24" || { nvm install 24.13.0 && nvm alias default 24.13.0; }
+node --version 2>/dev/null | grep -q "v${NODE_VERSION%%.*}" || { nvm install "$NODE_VERSION" && nvm alias default "$NODE_VERSION"; }
 
 if ! command -v bun &>/dev/null; then
   curl -fsSL https://bun.sh/install | bash
@@ -343,15 +358,29 @@ fi
 ```powershell
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   winget install CoreyButler.NVMforWindows --accept-source-agreements --accept-package-agreements
+  # nvm-windows は新しいシェルで有効化されるため、PATHを手動追加
+  $env:NVM_HOME = "$env:APPDATA\nvm"
+  $env:PATH = "$env:NVM_HOME;$env:PATH"
   nvm install 24.13.0
   nvm use 24.13.0
+}
+
+if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
+  irm https://bun.sh/install.ps1 | iex
 }
 ```
 
 ### チェックポイント 4
 
+Mac:
 ```bash
 node --version && echo "✅ Node.js OK"
+```
+
+Windows:
+```powershell
+node --version
+Write-Host "✅ Node.js OK"
 ```
 
 ---
@@ -394,7 +423,7 @@ touch ~/.codex/config.toml
 # Codex公式設定: AGENTS.md が無い階層で参照するファイル名を追加
 if ! grep -q '^project_doc_fallback_filenames' ~/.codex/config.toml; then
   cat >> ~/.codex/config.toml << 'EOF'
-project_doc_fallback_filenames = ["CLAUDE.md", "AGENT.md", ".agents.md"]
+project_doc_fallback_filenames = ["CLAUDE.md", ".agents.md"]
 EOF
 fi
 ```
@@ -443,6 +472,8 @@ clawd をローカルにセットアップし、あなた専用の private リ�
 ※「repository not found」→ tomoにGitHub招待を依頼。先に進めます。
 ```
 
+### Mac
+
 ```bash
 # 変数
 PRIVATE_REPO_NAME="{GITHUB_USERNAME}-clawd-private"
@@ -479,7 +510,7 @@ git remote add origin "https://github.com/$PRIVATE_REPO_FULL.git"
 git checkout -B main
 git push -u origin main
 
-# パス修正
+# パス修正（Mac: /Users/tomo → /Users/現ユーザー）
 CURRENT_USER=$(whoami)
 [ "$CURRENT_USER" != "tomo" ] && [ -d ~/clawd/.claude ] && \
   find ~/clawd/.claude -name "*.json" -exec sed -i '' "s|/Users/tomo|/Users/${CURRENT_USER}|g" {} \; 2>/dev/null || true
@@ -508,17 +539,121 @@ if ! grep -q "## Non-Engineer Guardrails" ~/clawd/AGENTS.md 2>/dev/null; then
 EOF
 fi
 
-# git-auto-sync（tomo環境の運用を流用）
+# git-auto-sync
 chmod +x ~/clawd/scripts/git-auto-sync.sh
 pgrep -f "git-auto-sync.sh" >/dev/null || ~/clawd/scripts/git-auto-sync.sh --daemon
+```
+
+### Windows
+
+```powershell
+# 変数
+$PRIVATE_REPO_NAME = "{GITHUB_USERNAME}-clawd-private"
+$PRIVATE_REPO_FULL = "{GITHUB_USERNAME}/$PRIVATE_REPO_NAME"
+$CLAWD_DIR = "$env:USERPROFILE\clawd"
+$REPO_RAW = "https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main"
+
+# clawd 取得（未取得時のみ）
+if (-not (Test-Path $CLAWD_DIR)) {
+    cd $env:USERPROFILE
+    git clone https://github.com/tomochang/clawd.git
+    cd $CLAWD_DIR
+    npm install
+}
+
+cd $CLAWD_DIR
+
+# upstream を tomochang/clawd に固定
+$originUrl = git remote get-url origin 2>$null
+if ($originUrl -and $originUrl -ne "https://github.com/tomochang/clawd.git") {
+    git remote rename origin old-origin 2>$null
+} elseif ($originUrl) {
+    git remote rename origin upstream 2>$null
+}
+$upstreamUrl = git remote get-url upstream 2>$null
+if (-not $upstreamUrl) { git remote add upstream https://github.com/tomochang/clawd.git }
+
+# 個人privateリポジトリ作成（未作成時のみ）
+$repoExists = gh repo view $PRIVATE_REPO_FULL 2>$null
+if (-not $repoExists) {
+    gh repo create $PRIVATE_REPO_FULL --private --description "Personal clawd workspace auto-synced from Claude Code"
+}
+
+# origin を個人privateへ接続
+git remote remove origin 2>$null
+git remote add origin "https://github.com/$PRIVATE_REPO_FULL.git"
+
+# 初回push
+git checkout -B main
+git push -u origin main
+
+# パス修正（Windows: /Users/tomo → C:\Users\現ユーザー）
+$currentUser = $env:USERNAME
+if ($currentUser -ne "tomo" -and (Test-Path "$CLAWD_DIR\.claude")) {
+    Get-ChildItem "$CLAWD_DIR\.claude" -Filter "*.json" -Recurse | ForEach-Object {
+        (Get-Content $_.FullName -Raw) -replace '/Users/tomo', "/Users/$currentUser" -replace 'C:\\Users\\tomo', "C:\Users\$currentUser" | Set-Content $_.FullName
+    }
+}
+
+# グローバル CLAUDE.md
+if (-not (Test-Path "$env:USERPROFILE\CLAUDE.md")) {
+    Invoke-WebRequest -Uri "$REPO_RAW/GLOBAL_CLAUDE_MD.md" -OutFile "$env:USERPROFILE\CLAUDE.md"
+}
+if (-not (Test-Path "$env:USERPROFILE\.claude\CLAUDE.md")) {
+    New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude" | Out-Null
+    Invoke-WebRequest -Uri "$REPO_RAW/GLOBAL_CLAUDE_MD.md" -OutFile "$env:USERPROFILE\.claude\CLAUDE.md"
+}
+
+# Dynamic Product Architect メソドロジー
+New-Item -ItemType Directory -Force -Path "$CLAWD_DIR\output" | Out-Null
+if (-not (Test-Path "$CLAWD_DIR\output\dynamic-product-architect-v5.2-ja.md")) {
+    Invoke-WebRequest -Uri "$REPO_RAW/dynamic-product-architect-v5.2-ja.md" -OutFile "$CLAWD_DIR\output\dynamic-product-architect-v5.2-ja.md"
+}
+
+# 非エンジニア向けガードレール（重複防止）
+$agentsMd = "$CLAWD_DIR\AGENTS.md"
+$guardrailMarker = "## Non-Engineer Guardrails"
+if (-not (Test-Path $agentsMd) -or -not (Select-String -Path $agentsMd -Pattern $guardrailMarker -Quiet)) {
+    @"
+
+## Non-Engineer Guardrails
+
+- 破壊的操作（``rm -rf``, ``git reset --hard``, 履歴改変）はユーザーの明示許可なしで実行しない
+- 外部送信（メール/Slack投稿/本番デプロイ/公開URL共有）は実行前に必ず確認する
+- ``credentials*.json``, ``.env``, token, secret をGitにcommitしない
+- 高リスク変更（DBマイグレーション、権限設定変更、課金リソース作成）は実行前に理由と影響を提示する
+- 不明点がある場合は推測で実行せず、選択肢と推奨案を提示して確認する
+"@ | Add-Content $agentsMd
+}
+
+# git-auto-sync（Windowsではスケジュールタスクとして登録）
+# git-auto-sync.sh は bash スクリプトのため、Windows では Git Bash 経由で実行
+$syncScript = "$CLAWD_DIR\scripts\git-auto-sync.sh"
+if (Test-Path $syncScript) {
+    $gitBash = "C:\Program Files\Git\bin\bash.exe"
+    if (Test-Path $gitBash) {
+        $running = Get-Process -Name "bash" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match "git-auto-sync" }
+        if (-not $running) {
+            Start-Process -FilePath $gitBash -ArgumentList "-c", "$syncScript --daemon" -WindowStyle Hidden
+        }
+    } else {
+        Write-Host "⚠️ Git Bash が見つかりません。git-auto-sync は手動で設定してください。" -ForegroundColor Yellow
+    }
+}
 ```
 
 ---
 
 ## Phase 8: カスタムコマンド
 
+Mac:
 ```bash
 mkdir -p ~/.claude/commands
+```
+
+Windows:
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude\commands" | Out-Null
 ```
 
 ### /commit
@@ -562,10 +697,18 @@ CMDEOF
 
 ### /mail
 
+Mac:
 ```bash
 if [ -f ~/clawd/setup/miyagi/mail.md ] && [ ! -f ~/.claude/commands/mail.md ]; then
   cp ~/clawd/setup/miyagi/mail.md ~/.claude/commands/mail.md
 fi
+```
+
+Windows:
+```powershell
+$src = "$env:USERPROFILE\clawd\setup\miyagi\mail.md"
+$dst = "$env:USERPROFILE\.claude\commands\mail.md"
+if ((Test-Path $src) -and -not (Test-Path $dst)) { Copy-Item $src $dst }
 ```
 
 → mail.md 内のプレースホルダ（署名、カレンダーID）をユーザーに確認して置換:
@@ -577,6 +720,7 @@ mail.md をカスタマイズします:
 
 ### private ディレクトリ
 
+Mac:
 ```bash
 if [ -d ~/clawd ]; then
   mkdir -p ~/clawd/private
@@ -602,6 +746,39 @@ EOF
 fi
 ```
 
+Windows:
+```powershell
+$clawdDir = "$env:USERPROFILE\clawd"
+if (Test-Path $clawdDir) {
+    New-Item -ItemType Directory -Force -Path "$clawdDir\private" | Out-Null
+
+    $relFile = "$clawdDir\private\{USER_NAME_LOWER}_relationships.md"
+    if (-not (Test-Path $relFile)) {
+        @"
+# 人間関係メモ
+## 社内
+<!-- 名前・役職・やり取りメモを追記 -->
+## 社外
+<!-- 名前・会社・関係性・やり取りメモを追記 -->
+"@ | Set-Content $relFile -Encoding UTF8
+    }
+
+    $todoFile = "$clawdDir\private\{USER_NAME_LOWER}_todo.md"
+    if (-not (Test-Path $todoFile)) {
+        @"
+# TODO リスト
+## 直近の予定
+| 日付 | 時間 | 内容 | 備考 |
+|------|------|------|------|
+## タスク
+### 進行中
+### 保留
+### 完了
+"@ | Set-Content $todoFile -Encoding UTF8
+    }
+}
+```
+
 ---
 
 ## Phase 9: 追加 CLI ツール
@@ -621,15 +798,39 @@ test -d /Applications/Ghostty.app || brew install --cask ghostty
 brew list font-jetbrains-mono &>/dev/null 2>&1 || brew install --cask font-jetbrains-mono
 ```
 
+### Windows
+
+```powershell
+# Go
+if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
+    winget install GoLang.Go --accept-source-agreements --accept-package-agreements
+    $env:PATH = "$env:USERPROFILE\go\bin;C:\Program Files\Go\bin;$env:PATH"
+}
+
+# gogcli（Go経由でインストール）
+if (-not (Get-Command gog -ErrorAction SilentlyContinue)) {
+    go install github.com/tomochang/gogcli@latest
+    $env:PATH = "$env:USERPROFILE\go\bin;$env:PATH"
+}
+
+# Windows Terminal + JetBrains Mono フォント（Ghostty/tmux の代替）
+# Windows Terminal は標準搭載。フォントのみ追加。
+winget list "JetBrains Mono" 2>$null
+if ($LASTEXITCODE -ne 0) {
+    winget install "JetBrainsMono.NerdFont" --accept-source-agreements --accept-package-agreements 2>$null
+}
+```
+
 ### gogcli GCP 認証
 
 Mac:
 ```bash
 GOG_DIR="$HOME/Library/Application Support/gogcli"
 ```
+
 Windows:
-```bash
-GOG_DIR="$APPDATA/gogcli"
+```powershell
+$GOG_DIR = "$env:APPDATA\gogcli"
 ```
 
 **ユーザーに案内:**
@@ -646,13 +847,23 @@ Win:   %APPDATA%/gogcli/credentials.json
 配置できたら教えてください。
 ```
 
+Mac:
 ```bash
 mkdir -p "$GOG_DIR"
-# credentials.json が配置されるまで待機
 if [ ! -f "$GOG_DIR/credentials.json" ]; then
   echo "❌ credentials.json が見つかりません。上の手順で配置してください。"
-  exit 1
+  # → ユーザーが配置するまで待機。配置後に再実行。
 fi
+gog auth add {USER_EMAIL}
+```
+
+Windows:
+```powershell
+New-Item -ItemType Directory -Force -Path $GOG_DIR | Out-Null
+if (-not (Test-Path "$GOG_DIR\credentials.json")) {
+    Write-Host "❌ credentials.json が見つかりません。上の手順で配置してください。" -ForegroundColor Red
+    # → ユーザーが配置するまで待機。配置後に再実行。
+}
 gog auth add {USER_EMAIL}
 ```
 
@@ -683,9 +894,9 @@ vercel whoami 2>/dev/null || vercel login
 
 ---
 
-## Phase 10: シェル・ターミナル設定（Mac のみ、Windows はスキップ）
+## Phase 10: シェル・ターミナル設定
 
-### Ghostty
+### Ghostty（Mac のみ）
 
 ```bash
 mkdir -p ~/.config/ghostty
@@ -758,7 +969,7 @@ EOF
 test -d ~/.tmux/plugins/tpm || git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 ```
 
-### .zshrc（追記のみ）
+### .zshrc（Mac のみ・追記のみ）
 
 ```bash
 grep -q 'NVM_DIR' ~/.zshrc 2>/dev/null || cat >> ~/.zshrc << 'ZSHRC'
@@ -782,9 +993,33 @@ grep -q '.local/bin' ~/.zshrc 2>/dev/null || echo 'export PATH="$HOME/.local/bin
 source ~/.zshrc
 ```
 
+### PowerShell Profile（Windows のみ・追記のみ）
+
+```powershell
+$profilePath = $PROFILE.CurrentUserAllHosts
+if (-not (Test-Path $profilePath)) { New-Item -ItemType File -Force -Path $profilePath | Out-Null }
+
+# NVM パス
+if (-not (Select-String -Path $profilePath -Pattern "NVM_HOME" -Quiet -ErrorAction SilentlyContinue)) {
+    Add-Content $profilePath "`n# NVM`n`$env:NVM_HOME = `"`$env:APPDATA\nvm`"`n`$env:PATH = `"`$env:NVM_HOME;`$env:PATH`""
+}
+
+# Go パス
+if (-not (Select-String -Path $profilePath -Pattern "Go\\bin" -Quiet -ErrorAction SilentlyContinue)) {
+    Add-Content $profilePath "`n# Go`n`$env:PATH = `"C:\Program Files\Go\bin;`$env:USERPROFILE\go\bin;`$env:PATH`""
+}
+
+# Bun パス
+if (-not (Select-String -Path $profilePath -Pattern "\.bun" -Quiet -ErrorAction SilentlyContinue)) {
+    Add-Content $profilePath "`n# Bun`n`$env:BUN_INSTALL = `"`$env:USERPROFILE\.bun`"`n`$env:PATH = `"`$env:BUN_INSTALL\bin;`$env:PATH`""
+}
+```
+
 ---
 
 ## Phase 11: スモークテスト + 完了報告
+
+### Mac
 
 ```bash
 echo ""
@@ -792,7 +1027,7 @@ echo "=========================================="
 echo " スモークテスト"
 echo "=========================================="
 echo "--- Foundation ---"
-brew --version 2>/dev/null | head -1 || echo "brew: N/A (Windows)"
+brew --version 2>/dev/null | head -1
 git --version
 gh auth status 2>&1 | head -2
 echo "--- Node.js ---"
@@ -802,8 +1037,7 @@ echo "--- Claude Code ---"
 claude --version
 echo "--- CLI Tools ---"
 gog --version 2>/dev/null | head -1 || echo "gog: 要credentials"
-tmux -V 2>/dev/null || echo "tmux: N/A (Windows)"
-python3 --version 2>/dev/null || echo "python3: N/A"
+tmux -V 2>/dev/null || echo "tmux: N/A"
 vercel --version 2>/dev/null | head -1 || echo "vercel: 未設定"
 echo "--- Terminal ---"
 test -d /Applications/Ghostty.app && echo "Ghostty: OK" || echo "Ghostty: N/A"
@@ -812,7 +1046,48 @@ test -f ~/clawd/package.json && echo "clawd: OK" || echo "clawd: 要アクセス
 echo "=========================================="
 ```
 
-完了報告:
+### Windows
+
+```powershell
+Write-Host ""
+Write-Host "=========================================="
+Write-Host " スモークテスト"
+Write-Host "=========================================="
+Write-Host "--- Foundation ---"
+git --version
+gh auth status 2>&1 | Select-Object -First 2
+Write-Host "--- Node.js ---"
+node --version
+bun --version 2>$null; if ($LASTEXITCODE -ne 0) { Write-Host "bun: N/A" }
+Write-Host "--- Claude Code ---"
+claude --version
+Write-Host "--- CLI Tools ---"
+try { gog --version 2>$null | Select-Object -First 1 } catch { Write-Host "gog: 要credentials" }
+try { vercel --version 2>$null | Select-Object -First 1 } catch { Write-Host "vercel: 未設定" }
+Write-Host "--- Project ---"
+if (Test-Path "$env:USERPROFILE\clawd\package.json") { Write-Host "clawd: OK" } else { Write-Host "clawd: 要アクセス権" }
+Write-Host "=========================================="
+```
+
+### MCP 接続確認（共通）
+
+スモークテスト後、以下をユーザーに案内して MCP が動作するか確認する:
+
+```
+最後に動作確認をします。以下を試してみてください:
+
+1. 新しいターミナルで Claude Code を起動:
+   cd ~/clawd && claude   (Mac)
+   cd ~\clawd; claude     (Windows)
+
+2. Claude に聞いてみる:
+   「#general の最新メッセージを1件見せて」
+
+→ Slack のメッセージが表示されれば成功です！
+→ エラーが出たら Slack トークン（xoxp-）を確認してください。
+```
+
+完了報告（Mac）:
 
 ```
 ✅ セットアップ完了！
@@ -829,6 +1104,19 @@ echo "=========================================="
 お疲れ様でした！
 ```
 
+完了報告（Windows）:
+
+```
+✅ セットアップ完了！
+
+■ 次のステップ:
+1. Windows Terminal を起動
+2. Claude Code: cd ~\clawd; claude
+3. 試しに:「今日のSlackの未読を教えて」
+
+お疲れ様でした！
+```
+
 ---
 
 ## トラブルシューティング
@@ -841,7 +1129,7 @@ echo "=========================================="
 | `repository not found` | tomoにGitHub招待依頼を案内。Phase 7 スキップ可 |
 | `Marketplace not found` | `claude --version` 実行後リトライ |
 | `Please login` / 認証エラー | `claude login` を実行してブラウザ認証 |
-| `npm install` 失敗 | `nvm use 24.13.0` → リトライ |
+| `npm install` 失敗 | `nvm use $NODE_VERSION` → リトライ |
 | Slack `invalid_auth` | xoxp- トークン全体をコピーし直すよう案内 |
 | Slack Bot Token 使用 | User Token Scopes に変更 → 再Install to Workspace |
 | `gog auth` エラー | `UPSIDER-Claude-Setup-Prod.json` を `credentials.json` にリネーム済みか確認 |

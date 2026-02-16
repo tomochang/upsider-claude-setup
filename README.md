@@ -37,7 +37,7 @@ Claude が起動したら `セットアップを開始して` と入力。あと
 - `~/clawd` の `origin` をその private repo に接続
 - `scripts/git-auto-sync.sh --daemon` で自動 commit / push を常時実行
 - `~/clawd/AGENTS.md` に非エンジニア向けガードレールを自動反映
-- Codex 設定（`~/.codex/config.toml`）で `AGENTS.md` 不在時の `CLAUDE.md` / `AGENT.md` フォールバックを有効化
+- Codex 設定（`~/.codex/config.toml`）で `AGENTS.md` 不在時の `CLAUDE.md` フォールバックを有効化
 
 ### セキュリティ
 
