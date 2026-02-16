@@ -39,9 +39,34 @@ if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
     # 子プロセスで実行（install.ps1 内の exit がこのセッションを殺さないように）
     powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://claude.ai/install.ps1 | iex"
 
-    # --- PATH を自動設定 ---
-    $claudeBin = Join-Path $env:USERPROFILE ".local\bin"
-    if (Test-Path (Join-Path $claudeBin "claude.exe")) {
+    # --- claude.exe を探す ---
+    Write-Host ""
+    Write-Host "claude.exe を探しています..." -ForegroundColor Cyan
+    $searchPaths = @(
+        (Join-Path $env:USERPROFILE ".local\bin"),
+        (Join-Path $env:USERPROFILE ".claude\bin"),
+        (Join-Path $env:LOCALAPPDATA "Programs\claude"),
+        (Join-Path $env:LOCALAPPDATA "Claude"),
+        (Join-Path $env:PROGRAMFILES "Claude")
+    )
+    $claudeBin = $null
+    foreach ($p in $searchPaths) {
+        if (Test-Path (Join-Path $p "claude.exe")) {
+            $claudeBin = $p
+            break
+        }
+    }
+
+    if (-not $claudeBin) {
+        # 最終手段: ドライブ全体から探す
+        $found = Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter "claude.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($found) {
+            $claudeBin = $found.DirectoryName
+        }
+    }
+
+    if ($claudeBin) {
+        Write-Host "見つかりました: $claudeBin\claude.exe" -ForegroundColor Green
         # 現在のセッションに追加
         if ($env:PATH -notlike "*$claudeBin*") {
             $env:PATH = "$claudeBin;$env:PATH"
@@ -50,10 +75,10 @@ if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
         $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
         if ($userPath -notlike "*$claudeBin*") {
             [Environment]::SetEnvironmentVariable("Path", "$claudeBin;$userPath", "User")
-            Write-Host "PATH に $claudeBin を追加しました。" -ForegroundColor Green
+            Write-Host "PATH に追加しました。" -ForegroundColor Green
         }
     } else {
-        Write-Host "claude.exe が見つかりません: $claudeBin" -ForegroundColor Red
+        Write-Host "claude.exe が見つかりません。" -ForegroundColor Red
         Write-Host "https://claude.ai/download から手動インストールしてください。"
         return
     }
