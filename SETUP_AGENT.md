@@ -133,6 +133,8 @@ AIは作れます。
 ### 情報収集（一度に全部聞く）
 
 ```
+GitHubアカウント未作成の場合は https://github.com/signup で先に作成してください。
+
 セットアップに必要な情報を教えてください:
 
 1. 名前（日本語。メール署名に使います。例: 水野）
@@ -148,6 +150,7 @@ AIは作れます。
 - `{GITHUB_USERNAME}` = GitHubユーザー名
 - `{GITHUB_EMAIL}` = GitHubメールアドレス
 - `{USER_EMAIL}` = Googleアカウント
+- `{PRIVATE_REPO_NAME}` = `{GITHUB_USERNAME}-clawd-private`
 
 ---
 
@@ -382,6 +385,20 @@ claude plugin install claude-mem@thedotmack
 
 → `Marketplace not found`: `claude --version` 実行後にリトライ。2回失敗 → スキップ。
 
+### 5.3 Codex 設定（AGENTS.md フォールバック）
+
+```bash
+mkdir -p ~/.codex
+touch ~/.codex/config.toml
+
+# Codex公式設定: AGENTS.md が無い階層で参照するファイル名を追加
+if ! grep -q '^project_doc_fallback_filenames' ~/.codex/config.toml; then
+  cat >> ~/.codex/config.toml << 'EOF'
+project_doc_fallback_filenames = ["CLAUDE.md", "AGENT.md", ".agents.md"]
+EOF
+fi
+```
+
 ---
 
 ## Phase 6: MCP サーバー
@@ -420,18 +437,47 @@ claude mcp add slack -s user \
 
 **ユーザーに案内:**
 ```
-clawd リポジトリをフォークします:
-1. https://github.com/tomochang/clawd を開く
-2. 右上の「Fork」をクリック
-3. 完了したら教えてください
+clawd をローカルにセットアップし、あなた専用の private リポジトリに接続します。
+初回のみ private リポジトリ `{GITHUB_USERNAME}-clawd-private` を自動作成します。
 
 ※「repository not found」→ tomoにGitHub招待を依頼。先に進めます。
 ```
 
 ```bash
+# 変数
+PRIVATE_REPO_NAME="{GITHUB_USERNAME}-clawd-private"
+PRIVATE_REPO_FULL="{GITHUB_USERNAME}/${PRIVATE_REPO_NAME}"
+
+# clawd 取得（未取得時のみ）
 if [ ! -d ~/clawd ]; then
-  cd ~ && git clone https://github.com/{GITHUB_USERNAME}/clawd.git && cd ~/clawd && npm install
+  cd ~ && git clone https://github.com/tomochang/clawd.git && cd ~/clawd && npm install
 fi
+
+cd ~/clawd
+
+# upstream を tomochang/clawd に固定
+if git remote get-url origin >/dev/null 2>&1; then
+  ORIGIN_URL="$(git remote get-url origin)"
+  if [ "$ORIGIN_URL" != "https://github.com/tomochang/clawd.git" ] && [ "$ORIGIN_URL" != "git@github.com:tomochang/clawd.git" ]; then
+    git remote rename origin old-origin 2>/dev/null || true
+  else
+    git remote rename origin upstream 2>/dev/null || true
+  fi
+fi
+git remote get-url upstream >/dev/null 2>&1 || git remote add upstream https://github.com/tomochang/clawd.git
+
+# 個人privateリポジトリ作成（未作成時のみ）
+if ! gh repo view "$PRIVATE_REPO_FULL" >/dev/null 2>&1; then
+  gh repo create "$PRIVATE_REPO_FULL" --private --description "Personal clawd workspace auto-synced from Claude Code"
+fi
+
+# origin を個人privateへ接続
+git remote remove origin 2>/dev/null || true
+git remote add origin "https://github.com/$PRIVATE_REPO_FULL.git"
+
+# 初回push（mainがなければ作成）
+git checkout -B main
+git push -u origin main
 
 # パス修正
 CURRENT_USER=$(whoami)
@@ -447,6 +493,24 @@ test -f ~/.claude/CLAUDE.md || curl -fsSL "${REPO_RAW}/GLOBAL_CLAUDE_MD.md" -o ~
 mkdir -p ~/clawd/output
 test -f ~/clawd/output/dynamic-product-architect-v5.2-ja.md || \
   curl -fsSL "${REPO_RAW}/dynamic-product-architect-v5.2-ja.md" -o ~/clawd/output/dynamic-product-architect-v5.2-ja.md
+
+# 非エンジニア向けガードレールを追記（重複防止）
+if ! grep -q "## Non-Engineer Guardrails" ~/clawd/AGENTS.md 2>/dev/null; then
+  cat >> ~/clawd/AGENTS.md << 'EOF'
+
+## Non-Engineer Guardrails
+
+- 破壊的操作（`rm -rf`, `git reset --hard`, 履歴改変）はユーザーの明示許可なしで実行しない
+- 外部送信（メール/Slack投稿/本番デプロイ/公開URL共有）は実行前に必ず確認する
+- `credentials*.json`, `.env`, token, secret をGitにcommitしない
+- 高リスク変更（DBマイグレーション、権限設定変更、課金リソース作成）は実行前に理由と影響を提示する
+- 不明点がある場合は推測で実行せず、選択肢と推奨案を提示して確認する
+EOF
+fi
+
+# git-auto-sync（tomo環境の運用を流用）
+chmod +x ~/clawd/scripts/git-auto-sync.sh
+pgrep -f "git-auto-sync.sh" >/dev/null || ~/clawd/scripts/git-auto-sync.sh --daemon
 ```
 
 ---

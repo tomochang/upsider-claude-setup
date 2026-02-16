@@ -31,6 +31,14 @@ cd ~\upsider-setup; claude
 
 Claude が起動したら `セットアップを開始して` と入力。あとは Claude が全部やります。
 
+セットアップ完了後の標準状態:
+
+- 各ユーザーの GitHub private リポジトリ（`<github-username>-clawd-private`）を自動作成
+- `~/clawd` の `origin` をその private repo に接続
+- `scripts/git-auto-sync.sh --daemon` で自動 commit / push を常時実行
+- `~/clawd/AGENTS.md` に非エンジニア向けガードレールを自動反映
+- Codex 設定（`~/.codex/config.toml`）で `AGENTS.md` 不在時の `CLAUDE.md` / `AGENT.md` フォールバックを有効化
+
 ### セキュリティ
 
 このリポジトリは public です。`curl | bash` に不安がある場合は、先にスクリプトを確認できます:
