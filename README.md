@@ -24,7 +24,7 @@ Mac:
 cd ~/upsider-setup && claude
 ```
 
-Windows (PowerShell):
+Windows (PowerShell を**再起動してから**):
 ```powershell
 cd ~\upsider-setup; claude
 ```

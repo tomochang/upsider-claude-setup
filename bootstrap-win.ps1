@@ -40,9 +40,36 @@ Write-Host ""
 if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
     Write-Host "Claude CLI をインストール中..."
     irm https://claude.ai/install.ps1 | iex
+
+    # インストール後、PATH をリフレッシュ（レジストリから再読み込み）
+    $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+    $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+    $env:PATH = "$userPath;$machinePath"
+
+    # それでも見つからない場合、一般的なインストール先を直接追加
+    if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
+        $claudePaths = @(
+            "$env:USERPROFILE\.claude\bin",
+            "$env:LOCALAPPDATA\Programs\claude-code",
+            "$env:LOCALAPPDATA\AnthropicClaude\bin",
+            "$env:ProgramFiles\Claude\bin"
+        )
+        foreach ($p in $claudePaths) {
+            if (Test-Path "$p\claude.exe") {
+                $env:PATH = "$p;$env:PATH"
+                break
+            }
+        }
+    }
     Write-Host ""
 }
-Write-Host "Claude CLI: OK" -ForegroundColor Green
+
+if (Get-Command claude -ErrorAction SilentlyContinue) {
+    Write-Host "Claude CLI: OK" -ForegroundColor Green
+} else {
+    Write-Host "Claude CLI: インストール済みですが、PATHに反映されていません。" -ForegroundColor Yellow
+    Write-Host "  → このスクリプト完了後、PowerShellを再起動してください。" -ForegroundColor Yellow
+}
 
 # --- セットアップワークスペース ---
 $setupDir = "$env:USERPROFILE\upsider-setup"
@@ -63,10 +90,13 @@ Write-Host "=========================================="
 Write-Host " あと2ステップで完了！" -ForegroundColor Green
 Write-Host "=========================================="
 Write-Host ""
-Write-Host " 1. 実行:" -ForegroundColor Cyan
+Write-Host " 1. PowerShellを一度閉じて、再度開く" -ForegroundColor Cyan
+Write-Host "    (claude コマンドをPATHに反映するため)"
+Write-Host ""
+Write-Host " 2. 実行:" -ForegroundColor Cyan
 Write-Host "    cd ~\upsider-setup; claude"
 Write-Host ""
-Write-Host " 2. Claude に伝える:" -ForegroundColor Cyan
+Write-Host " 3. Claude に伝える:" -ForegroundColor Cyan
 Write-Host "    セットアップを開始して"
 Write-Host ""
 Write-Host " あとは Claude が全部やります。"
