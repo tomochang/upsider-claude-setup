@@ -9,12 +9,30 @@
 $ErrorActionPreference = "Stop"
 $REPO_RAW = "https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main"
 
+# --- 管理者権限チェック ---
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Host ""
+    Write-Host "=========================================" -ForegroundColor Red
+    Write-Host " 管理者権限が必要です" -ForegroundColor Red
+    Write-Host "=========================================" -ForegroundColor Red
+    Write-Host ""
+    Write-Host " PowerShellを右クリック →「管理者として実行」" -ForegroundColor Yellow
+    Write-Host " してから、もう一度このコマンドを実行してください。"
+    Write-Host ""
+    exit 1
+}
+
+# --- ExecutionPolicy ---
+try {
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+} catch {
+    Write-Host "ExecutionPolicy の設定に失敗しました: $_" -ForegroundColor Yellow
+}
+
 Write-Host ""
 Write-Host "=========================================="
 Write-Host " UPSIDER Claude Code セットアップ"
-Write-Host "=========================================="
-Write-Host ""
-Write-Host "注意: PowerShellを管理者として実行してください" -ForegroundColor Yellow
 Write-Host "=========================================="
 Write-Host ""
 
@@ -53,4 +71,9 @@ Write-Host "    セットアップを開始して"
 Write-Host ""
 Write-Host " あとは Claude が全部やります。"
 Write-Host "=========================================="
+Write-Host ""
+Write-Host "--- トラブルシューティング ---" -ForegroundColor DarkGray
+Write-Host " 'スクリプトの実行が無効': Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force" -ForegroundColor DarkGray
+Write-Host " '管理者権限': PowerShellを右クリック →「管理者として実行」" -ForegroundColor DarkGray
+Write-Host " 'claude が見つからない': PowerShellを再起動してから再実行" -ForegroundColor DarkGray
 Write-Host ""

@@ -10,19 +10,37 @@ Claude Code + Ghostty + tmux の開発環境を自動セットアップ。
 curl -fsSL https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main/bootstrap-mac.sh | bash
 ```
 
-### Windows (PowerShell)
+### Windows (PowerShell を管理者で実行)
 
 ```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
 irm https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main/bootstrap-win.ps1 | iex
 ```
 
 ### 起動
 
+Mac:
 ```bash
 cd ~/upsider-setup && claude
 ```
 
+Windows (PowerShell):
+```powershell
+cd ~\upsider-setup; claude
+```
+
 Claude が起動したら `セットアップを開始して` と入力。あとは Claude が全部やります。
+
+### セキュリティ
+
+このリポジトリは public です。`curl | bash` に不安がある場合は、先にスクリプトを確認できます:
+
+```bash
+# Mac: ダウンロードしてから中身を確認 → 実行
+curl -fsSL https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main/bootstrap-mac.sh -o /tmp/bootstrap.sh
+cat /tmp/bootstrap.sh   # 中身を確認
+bash /tmp/bootstrap.sh
+```
 
 ## ファイル構成
 
@@ -38,15 +56,10 @@ Claude が起動したら `セットアップを開始して` と入力。あと
 
 ## 配布前の準備
 
-`SETUP_AGENT.md` 内の以下のプレースホルダを実際の値に置換:
+GCP OAuth の `credentials.json` を Slack の `#dev-setup` チャンネルに固定投稿しておく。
+セットアップ中に Claude がユーザーにダウンロードを案内する。
 
-- `__GOG_CLIENT_ID__` → GCP OAuth Client ID
-- `__GOG_CLIENT_SECRET__` → GCP OAuth Client Secret
-
-```bash
-sed -i '' 's/__GOG_CLIENT_ID__/actual-id/g' SETUP_AGENT.md
-sed -i '' 's/__GOG_CLIENT_SECRET__/actual-secret/g' SETUP_AGENT.md
-```
+**このリポジトリに secret を含めないこと。**
 
 ## 所要時間
 

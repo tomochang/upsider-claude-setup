@@ -562,12 +562,24 @@ Windows:
 GOG_DIR="$APPDATA/gogcli"
 ```
 
+**ユーザーに案内:**
+```
+Google Calendar / Gmail 連携には credentials.json が必要です。
+Slackの #dev-setup チャンネルに固定されているファイルをダウンロードして、
+以下のパスに配置してください:
+
+Mac:   ~/Library/Application Support/gogcli/credentials.json
+Win:   %APPDATA%/gogcli/credentials.json
+
+配置できたら教えてください。
+```
+
 ```bash
 mkdir -p "$GOG_DIR"
+# credentials.json が配置されるまで待機
 if [ ! -f "$GOG_DIR/credentials.json" ]; then
-  cat > "$GOG_DIR/credentials.json" << 'GOGEOF'
-{"installed":{"client_id":"__GOG_CLIENT_ID__","client_secret":"__GOG_CLIENT_SECRET__","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","redirect_uris":["http://localhost"]}}
-GOGEOF
+  echo "❌ credentials.json が見つかりません。上の手順で配置してください。"
+  exit 1
 fi
 gog auth add {USER_EMAIL}
 ```
