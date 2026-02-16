@@ -5,8 +5,11 @@
 #
 # やること: Claude CLI (native) のインストール + セットアップ手順の配置
 # やらないこと: Git, Node.js等 → Claude が全部やる
+#
+# 注意: irm | iex で実行されるため exit 禁止（PowerShellごと落ちる）
+#       ErrorActionPreference = Stop 禁止（未ハンドルエラーで落ちる）
+#       子スクリプトも iex ではなく子プロセスで実行する
 # =============================================================================
-$ErrorActionPreference = "Stop"
 $REPO_RAW = "https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main"
 
 # --- 管理者権限チェック ---
@@ -32,7 +35,9 @@ Write-Host ""
 # --- Claude CLI (native) ---
 if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
     Write-Host "Claude CLI をインストール中..."
-    irm https://claude.ai/install.ps1 | iex
+
+    # 子プロセスで実行（install.ps1 内の exit がこのセッションを殺さないように）
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://claude.ai/install.ps1 | iex"
 
     # --- PATH を自動設定 ---
     $claudeBin = Join-Path $env:USERPROFILE ".local\bin"
