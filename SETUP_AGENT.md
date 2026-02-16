@@ -9,7 +9,6 @@
 
 ```
 REPO_RAW=https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main
-DEFAULT_OAUTH_ENV=prod
 ```
 
 ## バージョン定義
@@ -139,7 +138,7 @@ AIは作れます。
 1. 名前（日本語。メール署名に使います。例: 水野）
 2. GitHubユーザー名
 3. GitHubに登録しているメールアドレス
-4. Anthropic APIキーを持っていますか？（持っていなければ一緒に作ります）
+4. Claudeサブスクリプション（Pro/Max）でログイン済みですか？（未ログインなら `claude login` を実行します）
 5. Googleアカウント（Gmail/Calendar連携用）
 ```
 
@@ -180,7 +179,7 @@ df -h / 2>/dev/null | tail -1
 # Xcode CLT（未インストールの場合のみ）
 xcode-select -p &>/dev/null || xcode-select --install
 # → ダイアログで「インストール」を押すよう案内
-# → 完了待ちの間に、APIキー未取得なら Phase 0 の Anthropic アカウント作成を案内
+# → 完了待ちの間に、Claude未ログインなら `claude login` を案内
 
 # Homebrew（未インストールの場合のみ）
 if ! command -v brew &>/dev/null; then
@@ -192,6 +191,9 @@ fi
 
 # Claude CLI（未インストールの場合のみ）
 command -v claude || { curl -fsSL https://claude.ai/install.sh | bash && export PATH="$HOME/.claude/bin:$PATH"; }
+
+# Claude サブスクリプションログイン（未ログインの場合のみ）
+claude login || true
 ```
 
 ### Windows
@@ -199,6 +201,9 @@ command -v claude || { curl -fsSL https://claude.ai/install.sh | bash && export 
 ```powershell
 # Claude CLI
 if (-not (Get-Command claude -ErrorAction SilentlyContinue)) { irm https://claude.ai/install.ps1 | iex }
+
+# Claude サブスクリプションログイン（未ログインの場合のみ）
+claude login
 ```
 
 ### チェックポイント 2
@@ -771,6 +776,7 @@ echo "=========================================="
 | `gh auth login` ブラウザ開かない | 表示URLを手動でブラウザにコピーするよう案内 |
 | `repository not found` | tomoにGitHub招待依頼を案内。Phase 7 スキップ可 |
 | `Marketplace not found` | `claude --version` 実行後リトライ |
+| `Please login` / 認証エラー | `claude login` を実行してブラウザ認証 |
 | `npm install` 失敗 | `nvm use 24.13.0` → リトライ |
 | Slack `invalid_auth` | xoxp- トークン全体をコピーし直すよう案内 |
 | Slack Bot Token 使用 | User Token Scopes に変更 → 再Install to Workspace |

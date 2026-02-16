@@ -68,10 +68,8 @@ bash /tmp/bootstrap.sh
 ### OAuth運用方針（固定）
 
 - Google OAuth クライアントは **ユーザーごとに作らない**
-- 以下の **共通2クライアント** を使う:
-  - `UPSIDER-Claude-Setup-Prod`（通常利用）
-  - `UPSIDER-Claude-Setup-Stg`（検証用）
-- 通常ユーザーは `Prod` を使い、`Stg` は検証担当のみ利用する
+- 以下の **共通1クライアント** を使う:
+  - `UPSIDER-Claude-Setup-Prod`
 
 ### 配布ファイル
 
