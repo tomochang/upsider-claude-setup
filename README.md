@@ -40,11 +40,9 @@ cd ~\upsider-setup; claude
 
 セットアップ完了後の標準状態:
 
-- 各ユーザーの GitHub private リポジトリ（`<github-username>-clawd-private`）を自動作成
-- `~/clawd` の `origin` をその private repo に接続
-- `scripts/git-auto-sync.sh --daemon` で自動 commit / push を常時実行
+- 各ユーザーの GitHub private リポジトリ（`<github-username>-workspace`）を自動作成
+- `~/clawd` ワークスペースを初期化し、private repo に接続
 - `~/clawd/AGENTS.md` に非エンジニア向けガードレールを自動反映
-- Codex 設定（`~/.codex/config.toml`）で `AGENTS.md` 不在時の `CLAUDE.md` フォールバックを有効化
 
 ### セキュリティ
 
@@ -75,6 +73,8 @@ bash /tmp/bootstrap.sh
 | `SETUP_AGENT.md` | Claude が読んで自動実行するセットアップ手順（= CLAUDE.md） |
 | `GLOBAL_CLAUDE_MD.md` | グローバル `~/.claude/CLAUDE.md` テンプレート |
 | `dynamic-product-architect-v5.2-ja.md` | UPSIDER Dynamic Product Architect メソドロジー |
+| `git-auto-sync.sh` | ワークスペースの自動 commit / push スクリプト |
+| `mail-command.md` | `/mail` カスタムコマンド（Gmail返信アシスタント） |
 | `slack-app-manifest.yaml` | Slack App 作成用 Manifest |
 | `versions.env` | ツールバージョン定義 |
 

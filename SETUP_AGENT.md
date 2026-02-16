@@ -156,7 +156,7 @@ GitHubアカウント未作成の場合は https://github.com/signup で先に�
 - `{GITHUB_USERNAME}` = GitHubユーザー名
 - `{GITHUB_EMAIL}` = GitHubメールアドレス
 - `{USER_EMAIL}` = Googleアカウント
-- `{PRIVATE_REPO_NAME}` = `{GITHUB_USERNAME}-clawd-private`
+- `{PRIVATE_REPO_NAME}` = `{GITHUB_USERNAME}-workspace`
 
 ---
 
@@ -462,70 +462,47 @@ claude mcp add slack -s user \
 
 ---
 
-## Phase 7: clawd プロジェクト
-
-**ユーザーに案内:**
-```
-clawd をローカルにセットアップし、あなた専用の private リポジトリに接続します。
-初回のみ private リポジトリ `{GITHUB_USERNAME}-clawd-private` を自動作成します。
-
-※「repository not found」→ tomoにGitHub招待を依頼。先に進めます。
-```
+## Phase 7: ワークスペース
 
 ### Mac
 
 ```bash
 # 変数
-PRIVATE_REPO_NAME="{GITHUB_USERNAME}-clawd-private"
+PRIVATE_REPO_NAME="{GITHUB_USERNAME}-workspace"
 PRIVATE_REPO_FULL="{GITHUB_USERNAME}/${PRIVATE_REPO_NAME}"
+REPO_RAW="https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main"
 
-# clawd 取得（未取得時のみ）
-if [ ! -d ~/clawd ]; then
-  cd ~ && git clone https://github.com/tomochang/clawd.git && cd ~/clawd && npm install
-fi
-
-cd ~/clawd
-
-# upstream を tomochang/clawd に固定
-if git remote get-url origin >/dev/null 2>&1; then
-  ORIGIN_URL="$(git remote get-url origin)"
-  if [ "$ORIGIN_URL" != "https://github.com/tomochang/clawd.git" ] && [ "$ORIGIN_URL" != "git@github.com:tomochang/clawd.git" ]; then
-    git remote rename origin old-origin 2>/dev/null || true
-  else
-    git remote rename origin upstream 2>/dev/null || true
-  fi
-fi
-git remote get-url upstream >/dev/null 2>&1 || git remote add upstream https://github.com/tomochang/clawd.git
+# ~/clawd ワークスペース作成
+mkdir -p ~/clawd/output ~/clawd/private ~/clawd/scripts
 
 # 個人privateリポジトリ作成（未作成時のみ）
+cd ~/clawd
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  git init
+fi
 if ! gh repo view "$PRIVATE_REPO_FULL" >/dev/null 2>&1; then
-  gh repo create "$PRIVATE_REPO_FULL" --private --description "Personal clawd workspace auto-synced from Claude Code"
+  gh repo create "$PRIVATE_REPO_FULL" --private --description "Personal workspace auto-synced from Claude Code"
 fi
 
 # origin を個人privateへ接続
 git remote remove origin 2>/dev/null || true
 git remote add origin "https://github.com/$PRIVATE_REPO_FULL.git"
 
-# 初回push（mainがなければ作成）
+# 初回push
 git checkout -B main
+git add -A && git commit -m "initial workspace" --allow-empty
 git push -u origin main
 
-# パス修正（Mac: /Users/tomo → /Users/現ユーザー）
-CURRENT_USER=$(whoami)
-[ "$CURRENT_USER" != "tomo" ] && [ -d ~/clawd/.claude ] && \
-  find ~/clawd/.claude -name "*.json" -exec sed -i '' "s|/Users/tomo|/Users/${CURRENT_USER}|g" {} \; 2>/dev/null || true
-
 # グローバル CLAUDE.md（リポジトリからダウンロード）
-REPO_RAW="https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main"
 test -f ~/CLAUDE.md || curl -fsSL "${REPO_RAW}/GLOBAL_CLAUDE_MD.md" -o ~/CLAUDE.md
+mkdir -p ~/.claude
 test -f ~/.claude/CLAUDE.md || curl -fsSL "${REPO_RAW}/GLOBAL_CLAUDE_MD.md" -o ~/.claude/CLAUDE.md
 
 # Dynamic Product Architect メソドロジー
-mkdir -p ~/clawd/output
 test -f ~/clawd/output/dynamic-product-architect-v5.2-ja.md || \
   curl -fsSL "${REPO_RAW}/dynamic-product-architect-v5.2-ja.md" -o ~/clawd/output/dynamic-product-architect-v5.2-ja.md
 
-# 非エンジニア向けガードレールを追記（重複防止）
+# 非エンジニア向けガードレール
 if ! grep -q "## Non-Engineer Guardrails" ~/clawd/AGENTS.md 2>/dev/null; then
   cat >> ~/clawd/AGENTS.md << 'EOF'
 
@@ -539,44 +516,36 @@ if ! grep -q "## Non-Engineer Guardrails" ~/clawd/AGENTS.md 2>/dev/null; then
 EOF
 fi
 
-# git-auto-sync
+# git-auto-sync スクリプト
+test -f ~/clawd/scripts/git-auto-sync.sh || \
+  curl -fsSL "${REPO_RAW}/git-auto-sync.sh" -o ~/clawd/scripts/git-auto-sync.sh
 chmod +x ~/clawd/scripts/git-auto-sync.sh
 pgrep -f "git-auto-sync.sh" >/dev/null || ~/clawd/scripts/git-auto-sync.sh --daemon
+
+# commit & push
+cd ~/clawd && git add -A && git commit -m "workspace setup" && git push
 ```
 
 ### Windows
 
 ```powershell
 # 変数
-$PRIVATE_REPO_NAME = "{GITHUB_USERNAME}-clawd-private"
+$PRIVATE_REPO_NAME = "{GITHUB_USERNAME}-workspace"
 $PRIVATE_REPO_FULL = "{GITHUB_USERNAME}/$PRIVATE_REPO_NAME"
 $CLAWD_DIR = "$env:USERPROFILE\clawd"
 $REPO_RAW = "https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main"
 
-# clawd 取得（未取得時のみ）
-if (-not (Test-Path $CLAWD_DIR)) {
-    cd $env:USERPROFILE
-    git clone https://github.com/tomochang/clawd.git
-    cd $CLAWD_DIR
-    npm install
-}
+# ~/clawd ワークスペース作成
+New-Item -ItemType Directory -Force -Path "$CLAWD_DIR\output", "$CLAWD_DIR\private", "$CLAWD_DIR\scripts" | Out-Null
 
 cd $CLAWD_DIR
-
-# upstream を tomochang/clawd に固定
-$originUrl = git remote get-url origin 2>$null
-if ($originUrl -and $originUrl -ne "https://github.com/tomochang/clawd.git") {
-    git remote rename origin old-origin 2>$null
-} elseif ($originUrl) {
-    git remote rename origin upstream 2>$null
-}
-$upstreamUrl = git remote get-url upstream 2>$null
-if (-not $upstreamUrl) { git remote add upstream https://github.com/tomochang/clawd.git }
+$isGit = git rev-parse --is-inside-work-tree 2>$null
+if (-not $isGit) { git init }
 
 # 個人privateリポジトリ作成（未作成時のみ）
 $repoExists = gh repo view $PRIVATE_REPO_FULL 2>$null
 if (-not $repoExists) {
-    gh repo create $PRIVATE_REPO_FULL --private --description "Personal clawd workspace auto-synced from Claude Code"
+    gh repo create $PRIVATE_REPO_FULL --private --description "Personal workspace auto-synced from Claude Code"
 }
 
 # origin を個人privateへ接続
@@ -585,27 +554,19 @@ git remote add origin "https://github.com/$PRIVATE_REPO_FULL.git"
 
 # 初回push
 git checkout -B main
+git add -A; git commit -m "initial workspace" --allow-empty
 git push -u origin main
-
-# パス修正（Windows: /Users/tomo → C:\Users\現ユーザー）
-$currentUser = $env:USERNAME
-if ($currentUser -ne "tomo" -and (Test-Path "$CLAWD_DIR\.claude")) {
-    Get-ChildItem "$CLAWD_DIR\.claude" -Filter "*.json" -Recurse | ForEach-Object {
-        (Get-Content $_.FullName -Raw) -replace '/Users/tomo', "/Users/$currentUser" -replace 'C:\\Users\\tomo', "C:\Users\$currentUser" | Set-Content $_.FullName
-    }
-}
 
 # グローバル CLAUDE.md
 if (-not (Test-Path "$env:USERPROFILE\CLAUDE.md")) {
     Invoke-WebRequest -Uri "$REPO_RAW/GLOBAL_CLAUDE_MD.md" -OutFile "$env:USERPROFILE\CLAUDE.md"
 }
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude" | Out-Null
 if (-not (Test-Path "$env:USERPROFILE\.claude\CLAUDE.md")) {
-    New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude" | Out-Null
     Invoke-WebRequest -Uri "$REPO_RAW/GLOBAL_CLAUDE_MD.md" -OutFile "$env:USERPROFILE\.claude\CLAUDE.md"
 }
 
 # Dynamic Product Architect メソドロジー
-New-Item -ItemType Directory -Force -Path "$CLAWD_DIR\output" | Out-Null
 if (-not (Test-Path "$CLAWD_DIR\output\dynamic-product-architect-v5.2-ja.md")) {
     Invoke-WebRequest -Uri "$REPO_RAW/dynamic-product-architect-v5.2-ja.md" -OutFile "$CLAWD_DIR\output\dynamic-product-architect-v5.2-ja.md"
 }
@@ -626,20 +587,8 @@ if (-not (Test-Path $agentsMd) -or -not (Select-String -Path $agentsMd -Pattern 
 "@ | Add-Content $agentsMd
 }
 
-# git-auto-sync（Windowsではスケジュールタスクとして登録）
-# git-auto-sync.sh は bash スクリプトのため、Windows では Git Bash 経由で実行
-$syncScript = "$CLAWD_DIR\scripts\git-auto-sync.sh"
-if (Test-Path $syncScript) {
-    $gitBash = "C:\Program Files\Git\bin\bash.exe"
-    if (Test-Path $gitBash) {
-        $running = Get-Process -Name "bash" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match "git-auto-sync" }
-        if (-not $running) {
-            Start-Process -FilePath $gitBash -ArgumentList "-c", "$syncScript --daemon" -WindowStyle Hidden
-        }
-    } else {
-        Write-Host "⚠️ Git Bash が見つかりません。git-auto-sync は手動で設定してください。" -ForegroundColor Yellow
-    }
-}
+# commit & push
+cd $CLAWD_DIR; git add -A; git commit -m "workspace setup"; git push
 ```
 
 ---
@@ -699,16 +648,15 @@ CMDEOF
 
 Mac:
 ```bash
-if [ -f ~/clawd/setup/miyagi/mail.md ] && [ ! -f ~/.claude/commands/mail.md ]; then
-  cp ~/clawd/setup/miyagi/mail.md ~/.claude/commands/mail.md
-fi
+REPO_RAW="https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main"
+test -f ~/.claude/commands/mail.md || curl -fsSL "${REPO_RAW}/mail-command.md" -o ~/.claude/commands/mail.md
 ```
 
 Windows:
 ```powershell
-$src = "$env:USERPROFILE\clawd\setup\miyagi\mail.md"
+$REPO_RAW = "https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main"
 $dst = "$env:USERPROFILE\.claude\commands\mail.md"
-if ((Test-Path $src) -and -not (Test-Path $dst)) { Copy-Item $src $dst }
+if (-not (Test-Path $dst)) { Invoke-WebRequest -Uri "$REPO_RAW/mail-command.md" -OutFile $dst }
 ```
 
 → mail.md 内のプレースホルダ（署名、カレンダーID）をユーザーに確認して置換:
@@ -801,16 +749,28 @@ brew list font-jetbrains-mono &>/dev/null 2>&1 || brew install --cask font-jetbr
 ### Windows
 
 ```powershell
-# Go
+# gogcli（GitHub Releases からバイナリ直接インストール）
+if (-not (Get-Command gog -ErrorAction SilentlyContinue)) {
+    $gogVersion = "0.11.0"
+    $arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "amd64" }
+    $gogZip = "$env:TEMP\gogcli.zip"
+    $gogDir = "$env:LOCALAPPDATA\Programs\gogcli"
+    Invoke-WebRequest -Uri "https://github.com/steipete/gogcli/releases/download/v${gogVersion}/gogcli_${gogVersion}_windows_${arch}.zip" -OutFile $gogZip
+    New-Item -ItemType Directory -Force -Path $gogDir | Out-Null
+    Expand-Archive -Path $gogZip -DestinationPath $gogDir -Force
+    Remove-Item $gogZip
+    # PATH に追加
+    $env:PATH = "$gogDir;$env:PATH"
+    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    if ($userPath -notlike "*$gogDir*") {
+        [Environment]::SetEnvironmentVariable("Path", "$gogDir;$userPath", "User")
+    }
+}
+
+# Go（gogcli以外で必要な場合のみ）
 if (-not (Get-Command go -ErrorAction SilentlyContinue)) {
     winget install GoLang.Go --accept-source-agreements --accept-package-agreements
     $env:PATH = "$env:USERPROFILE\go\bin;C:\Program Files\Go\bin;$env:PATH"
-}
-
-# gogcli（Go経由でインストール）
-if (-not (Get-Command gog -ErrorAction SilentlyContinue)) {
-    go install github.com/tomochang/gogcli@latest
-    $env:PATH = "$env:USERPROFILE\go\bin;$env:PATH"
 }
 
 # Windows Terminal + JetBrains Mono フォント（Ghostty/tmux の代替）
@@ -833,38 +793,26 @@ Windows:
 $GOG_DIR = "$env:APPDATA\gogcli"
 ```
 
-**ユーザーに案内:**
-```
-Google Calendar / Gmail 連携には credentials.json が必要です。
-Slackの #private_ai_pdm 固定投稿から `UPSIDER-Claude-Setup-Prod.json` をダウンロードしてください。
-
-ダウンロードしたファイル名を `credentials.json` に変更して、
-以下のパスに配置してください:
-
-Mac:   ~/Library/Application Support/gogcli/credentials.json
-Win:   %APPDATA%/gogcli/credentials.json
-
-配置できたら教えてください。
-```
+**credentials.json がなければスキップして先に進む。** セットアップ完了後に案内する。
 
 Mac:
 ```bash
 mkdir -p "$GOG_DIR"
 if [ ! -f "$GOG_DIR/credentials.json" ]; then
-  echo "❌ credentials.json が見つかりません。上の手順で配置してください。"
-  # → ユーザーが配置するまで待機。配置後に再実行。
+  echo "⏭️ credentials.json 未配置 → gogcli認証はスキップ（後で設定可能）"
+else
+  gog auth add {USER_EMAIL}
 fi
-gog auth add {USER_EMAIL}
 ```
 
 Windows:
 ```powershell
 New-Item -ItemType Directory -Force -Path $GOG_DIR | Out-Null
 if (-not (Test-Path "$GOG_DIR\credentials.json")) {
-    Write-Host "❌ credentials.json が見つかりません。上の手順で配置してください。" -ForegroundColor Red
-    # → ユーザーが配置するまで待機。配置後に再実行。
+    Write-Host "⏭️ credentials.json 未配置 → gogcli認証はスキップ（後で設定可能）" -ForegroundColor Yellow
+} else {
+    gog auth add {USER_EMAIL}
 }
-gog auth add {USER_EMAIL}
 ```
 
 → ユーザーに案内:
@@ -1042,7 +990,7 @@ vercel --version 2>/dev/null | head -1 || echo "vercel: 未設定"
 echo "--- Terminal ---"
 test -d /Applications/Ghostty.app && echo "Ghostty: OK" || echo "Ghostty: N/A"
 echo "--- Project ---"
-test -f ~/clawd/package.json && echo "clawd: OK" || echo "clawd: 要アクセス権"
+test -d ~/clawd/.git && echo "workspace: OK" || echo "workspace: 未初期化"
 echo "=========================================="
 ```
 
@@ -1065,7 +1013,7 @@ Write-Host "--- CLI Tools ---"
 try { gog --version 2>$null | Select-Object -First 1 } catch { Write-Host "gog: 要credentials" }
 try { vercel --version 2>$null | Select-Object -First 1 } catch { Write-Host "vercel: 未設定" }
 Write-Host "--- Project ---"
-if (Test-Path "$env:USERPROFILE\clawd\package.json") { Write-Host "clawd: OK" } else { Write-Host "clawd: 要アクセス権" }
+if (Test-Path "$env:USERPROFILE\clawd\.git") { Write-Host "workspace: OK" } else { Write-Host "workspace: 未初期化" }
 Write-Host "=========================================="
 ```
 
