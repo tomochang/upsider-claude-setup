@@ -20,7 +20,7 @@ if (-not $isAdmin) {
     Write-Host " PowerShellを右クリック →「管理者として実行」" -ForegroundColor Yellow
     Write-Host " してから、もう一度このコマンドを実行してください。"
     Write-Host ""
-    exit 1
+    return
 }
 
 # --- ExecutionPolicy ---
@@ -57,14 +57,14 @@ if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
     } else {
         Write-Host "claude.exe が見つかりません: $claudeBin" -ForegroundColor Red
         Write-Host "https://claude.ai/download から手動インストールしてください。"
-        exit 1
+        return
     }
 
     # 追加後に動作確認
     if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
         Write-Host "PATH を追加しましたが claude が認識されません。" -ForegroundColor Red
         Write-Host "PowerShell を再起動してから、もう一度このスクリプトを実行してください。"
-        exit 1
+        return
     }
     Write-Host "Claude CLI: OK" -ForegroundColor Green
 } else {
@@ -82,7 +82,7 @@ try {
 } catch {
     Write-Host "ダウンロード失敗。手動で配置してください:" -ForegroundColor Red
     Write-Host "  $REPO_RAW/SETUP_AGENT.md → ~\upsider-setup\CLAUDE.md"
-    exit 1
+    return
 }
 
 Write-Host ""
