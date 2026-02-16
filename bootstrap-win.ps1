@@ -40,16 +40,36 @@ Write-Host ""
 if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
     Write-Host "Claude CLI をインストール中..."
     irm https://claude.ai/install.ps1 | iex
-    Write-Host ""
-    Write-Host "Claude CLI のインストールが完了しました。" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "=========================================" -ForegroundColor Yellow
-    Write-Host " PowerShellを再起動してから、もう一度" -ForegroundColor Yellow
-    Write-Host " このスクリプトを実行してください。" -ForegroundColor Yellow
-    Write-Host "=========================================" -ForegroundColor Yellow
-    exit 0
+
+    # --- PATH を自動設定 ---
+    $claudeBin = Join-Path $env:USERPROFILE ".local\bin"
+    if (Test-Path (Join-Path $claudeBin "claude.exe")) {
+        # 現在のセッションに追加
+        if ($env:PATH -notlike "*$claudeBin*") {
+            $env:PATH = "$claudeBin;$env:PATH"
+        }
+        # 永続的な User PATH に追加
+        $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+        if ($userPath -notlike "*$claudeBin*") {
+            [Environment]::SetEnvironmentVariable("Path", "$claudeBin;$userPath", "User")
+            Write-Host "PATH に $claudeBin を追加しました。" -ForegroundColor Green
+        }
+    } else {
+        Write-Host "claude.exe が見つかりません: $claudeBin" -ForegroundColor Red
+        Write-Host "https://claude.ai/download から手動インストールしてください。"
+        exit 1
+    }
+
+    # 追加後に動作確認
+    if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
+        Write-Host "PATH を追加しましたが claude が認識されません。" -ForegroundColor Red
+        Write-Host "PowerShell を再起動してから、もう一度このスクリプトを実行してください。"
+        exit 1
+    }
+    Write-Host "Claude CLI: OK" -ForegroundColor Green
+} else {
+    Write-Host "Claude CLI: OK" -ForegroundColor Green
 }
-Write-Host "Claude CLI: OK" -ForegroundColor Green
 
 # --- セットアップワークスペース ---
 $setupDir = "$env:USERPROFILE\upsider-setup"
@@ -67,17 +87,15 @@ try {
 
 Write-Host ""
 Write-Host "=========================================="
-Write-Host " あと2ステップで完了！" -ForegroundColor Green
+Write-Host " 準備完了！" -ForegroundColor Green
 Write-Host "=========================================="
 Write-Host ""
-Write-Host " 1. PowerShellを一度閉じて、再度開く" -ForegroundColor Cyan
-Write-Host "    (claude コマンドをPATHに反映するため)"
+Write-Host " 以下を実行してください:" -ForegroundColor Cyan
 Write-Host ""
-Write-Host " 2. 実行:" -ForegroundColor Cyan
-Write-Host "    cd ~\upsider-setup; claude"
+Write-Host "    cd ~\upsider-setup; claude" -ForegroundColor White
 Write-Host ""
-Write-Host " 3. Claude に伝える:" -ForegroundColor Cyan
-Write-Host "    セットアップを開始して"
+Write-Host " Claude が起動したら:" -ForegroundColor Cyan
+Write-Host "    セットアップを開始して" -ForegroundColor White
 Write-Host ""
 Write-Host " あとは Claude が全部やります。"
 Write-Host "=========================================="
