@@ -42,6 +42,15 @@ cat /tmp/bootstrap.sh   # 中身を確認
 bash /tmp/bootstrap.sh
 ```
 
+固定バージョンで実行したい場合（推奨）:
+
+```bash
+# main ではなくコミットSHAを固定して取得する
+PINNED_SHA="<commit-sha>"
+curl -fsSL "https://raw.githubusercontent.com/tomochang/upsider-claude-setup/${PINNED_SHA}/bootstrap-mac.sh" -o /tmp/bootstrap.sh
+bash /tmp/bootstrap.sh
+```
+
 ## ファイル構成
 
 | ファイル | 役割 |
@@ -56,8 +65,27 @@ bash /tmp/bootstrap.sh
 
 ## 配布前の準備
 
-GCP OAuth の `credentials.json` を Slack の `#dev-setup` チャンネルに固定投稿しておく。
-セットアップ中に Claude がユーザーにダウンロードを案内する。
+### OAuth運用方針（固定）
+
+- Google OAuth クライアントは **ユーザーごとに作らない**
+- 以下の **共通2クライアント** を使う:
+  - `UPSIDER-Claude-Setup-Prod`（通常利用）
+  - `UPSIDER-Claude-Setup-Stg`（検証用）
+- 通常ユーザーは `Prod` を使い、`Stg` は検証担当のみ利用する
+
+### 配布ファイル
+
+Slack の `#private_ai_pdm` 固定投稿に以下を置く:
+
+- `UPSIDER-Claude-Setup-Prod.json`（Prodクライアント）
+
+セットアップ中に Claude はこのファイルを既定値として案内する。
+
+### 運用ルール（最低限）
+
+- 固定投稿は「閲覧権限ありメンバーのみ」に限定
+- 退職・権限変更時は投稿を差し替え、旧ファイルを削除
+- 漏洩疑い時はクライアントシークレットを即再発行し、固定投稿を更新
 
 **このリポジトリに secret を含めないこと。**
 

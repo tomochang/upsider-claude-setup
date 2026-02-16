@@ -9,6 +9,7 @@
 
 ```
 REPO_RAW=https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main
+DEFAULT_OAUTH_ENV=prod
 ```
 
 ## バージョン定義
@@ -565,7 +566,9 @@ GOG_DIR="$APPDATA/gogcli"
 **ユーザーに案内:**
 ```
 Google Calendar / Gmail 連携には credentials.json が必要です。
-Slackの #dev-setup チャンネルに固定されているファイルをダウンロードして、
+Slackの #private_ai_pdm 固定投稿から `UPSIDER-Claude-Setup-Prod.json` をダウンロードしてください。
+
+ダウンロードしたファイル名を `credentials.json` に変更して、
 以下のパスに配置してください:
 
 Mac:   ~/Library/Application Support/gogcli/credentials.json
@@ -771,7 +774,7 @@ echo "=========================================="
 | `npm install` 失敗 | `nvm use 24.13.0` → リトライ |
 | Slack `invalid_auth` | xoxp- トークン全体をコピーし直すよう案内 |
 | Slack Bot Token 使用 | User Token Scopes に変更 → 再Install to Workspace |
-| `gog auth` エラー | credentials.json 確認。なければ Phase 9 再実行 |
+| `gog auth` エラー | `UPSIDER-Claude-Setup-Prod.json` を `credentials.json` にリネーム済みか確認 |
 | 「Google確認されていません」 | 「詳細」→「安全でないページに移動」と案内 |
 | `.zshrc` 変更反映されない | `source ~/.zshrc` |
 | `sed: invalid command` | macOS: `sed -i ''`、Linux: `sed -i` |
