@@ -38,17 +38,15 @@ Write-Host ""
 
 # --- Claude CLI (native) ---
 if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
+    Write-Host "Claude CLI をインストール中..."
+    irm https://claude.ai/install.ps1 | iex
     Write-Host ""
-    Write-Host "=========================================" -ForegroundColor Cyan
-    Write-Host " Claude CLI を手動でインストールしてください" -ForegroundColor Cyan
-    Write-Host "=========================================" -ForegroundColor Cyan
+    Write-Host "Claude CLI のインストールが完了しました。" -ForegroundColor Green
     Write-Host ""
-    Write-Host " 1. ブラウザで https://claude.ai/download を開く"
-    Write-Host " 2. Windows版をダウンロードしてインストール"
-    Write-Host " 3. インストール完了後、PowerShellを再起動"
-    Write-Host " 4. もう一度このスクリプトを実行"
-    Write-Host ""
-    Write-Host "=========================================" -ForegroundColor Cyan
+    Write-Host "=========================================" -ForegroundColor Yellow
+    Write-Host " PowerShellを再起動してから、もう一度" -ForegroundColor Yellow
+    Write-Host " このスクリプトを実行してください。" -ForegroundColor Yellow
+    Write-Host "=========================================" -ForegroundColor Yellow
     exit 0
 }
 Write-Host "Claude CLI: OK" -ForegroundColor Green
