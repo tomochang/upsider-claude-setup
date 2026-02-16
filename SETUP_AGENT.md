@@ -5,6 +5,12 @@
 
 ---
 
+## 定数
+
+```
+REPO_RAW=https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main
+```
+
 ## バージョン定義
 
 以下のバージョンをこのセットアップ全体で使う:
@@ -355,9 +361,15 @@ CURRENT_USER=$(whoami)
 [ "$CURRENT_USER" != "tomo" ] && [ -d ~/clawd/.claude ] && \
   find ~/clawd/.claude -name "*.json" -exec sed -i '' "s|/Users/tomo|/Users/${CURRENT_USER}|g" {} \; 2>/dev/null || true
 
-# CLAUDE.md
-test -f ~/CLAUDE.md || echo -e "## Session Startup\n- Always start by changing to ~/clawd directory" > ~/CLAUDE.md
-test -f ~/.claude/CLAUDE.md || echo -e "## Session Startup\n- Always start by changing to ~/clawd directory" > ~/.claude/CLAUDE.md
+# グローバル CLAUDE.md（リポジトリからダウンロード）
+REPO_RAW="https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main"
+test -f ~/CLAUDE.md || curl -fsSL "${REPO_RAW}/GLOBAL_CLAUDE_MD.md" -o ~/CLAUDE.md
+test -f ~/.claude/CLAUDE.md || curl -fsSL "${REPO_RAW}/GLOBAL_CLAUDE_MD.md" -o ~/.claude/CLAUDE.md
+
+# Dynamic Product Architect メソドロジー
+mkdir -p ~/clawd/output
+test -f ~/clawd/output/dynamic-product-architect-v5.2-ja.md || \
+  curl -fsSL "${REPO_RAW}/dynamic-product-architect-v5.2-ja.md" -o ~/clawd/output/dynamic-product-architect-v5.2-ja.md
 ```
 
 ---

@@ -28,9 +28,11 @@ Claude が起動したら `セットアップを開始して` と入力。あと
 
 | ファイル | 役割 |
 |---------|------|
-| `bootstrap-mac.sh` | Mac用ブートストラップ（Homebrew + Claude CLI + ワークスペース作成） |
-| `bootstrap-win.ps1` | Windows用ブートストラップ（winget + Claude CLI + ワークスペース作成） |
+| `bootstrap-mac.sh` | Mac用ブートストラップ（Claude CLI + ワークスペース作成） |
+| `bootstrap-win.ps1` | Windows用ブートストラップ（Claude CLI + ワークスペース作成） |
 | `SETUP_AGENT.md` | Claude が読んで自動実行するセットアップ手順（= CLAUDE.md） |
+| `GLOBAL_CLAUDE_MD.md` | グローバル `~/.claude/CLAUDE.md` テンプレート |
+| `dynamic-product-architect-v5.2-ja.md` | UPSIDER Dynamic Product Architect メソドロジー |
 | `slack-app-manifest.yaml` | Slack App 作成用 Manifest |
 | `versions.env` | ツールバージョン定義 |
 
