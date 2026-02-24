@@ -1,0 +1,37 @@
+{
+  "model": "claude-opus-4-6",
+  "enabledPlugins": {
+    "claude-mem@thedotmack": true,
+    "Notion@claude-plugins-official": true
+  },
+  "autoUpdatesChannel": "stable",
+  "allowedTools": [
+    "WebFetch",
+    "WebSearch"
+  ],
+  "skipDangerousModePermissionPrompt": true,
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/cmux-notify.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/cmux-notify.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

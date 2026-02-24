@@ -44,7 +44,83 @@ cd ~\upsider-setup; claude
 - `~/clawd` ワークスペースを初期化し、private repo に接続
 - `~/clawd/AGENTS.md` に非エンジニア向けガードレールを自動反映
 
-### セキュリティ
+---
+
+## 設定リファレンス（`config/`）
+
+実運用で使われている Claude Code の設定パターン集。個人情報・機密情報は除去済み。
+
+### ディレクトリ構成
+
+```
+config/
+├── global/                          # ~/.claude/ に配置するグローバル設定
+│   ├── settings.json                # モデル選択、プラグイン、hook設定
+│   └── hooks/
+│       └── cmux-notify.sh           # Stop/Notification 通知フック
+│
+├── project/                         # プロジェクトの .claude/ に配置する設定
+│   ├── settings.json                # Hook lifecycle（全6イベント）設定例
+│   ├── CLAUDE.md                    # Plan管理、TDD、失敗ログ等のワークフロー
+│   ├── rules/                       # 行動ルール
+│   │   ├── self-awareness.md        # LLMの構造的弱点への対策
+│   │   ├── parallel-execution.md    # 並列実行の判断基準
+│   │   ├── tool-selection.md        # ツール選択の優先順位
+│   │   ├── procedure-replay.md      # 手順メモリの再実行ルール
+│   │   ├── session-start.md         # セッション開始時の必須読み込み
+│   │   ├── calendar-update.md       # エビデンスベースのカレンダー更新
+│   │   ├── email-search.md          # 複数アカウント並列検索
+│   │   ├── pre-send-checklist.md    # 送信前CC確認チェックリスト
+│   │   ├── post-send-checklist.md   # 送信後の後続タスク自動実行
+│   │   └── trigger-workflows.md     # トリガーワード → ワークフロー連携
+│   └── agents/                      # サブエージェント定義
+│       ├── code-reviewer.md         # コードレビュー専門エージェント
+│       ├── code-simplifier.md       # リファクタリング専門エージェント
+│       └── build-validator.md       # ビルド検証専門エージェント
+│
+├── skills/                          # スキル（再利用可能なワークフロー）
+│   └── mail/
+│       └── SKILL.md                 # Gmail 3層アーキテクチャ（判断/実行/データ）
+│
+└── procedures/                      # 手順メモリ（Procedural Memory）
+    ├── CLAUDE.md                    # 手順メモリシステムの説明
+    └── INDEX.md                     # 手順インデックス（hookによる自動マッチング）
+```
+
+### 設計思想
+
+#### 1. 3層アーキテクチャ（スキル設計）
+
+```
+スキル層   → 判断ルール（何をすべきか）
+プログラム層 → 実行スクリプト（どうやるか）
+データ層   → 状態管理（何が起きたか）
+```
+
+スキルだけに頼らない。プログラムとデータで行動を担保する。
+
+#### 2. Hook Lifecycle
+
+| イベント | 用途 |
+|---------|------|
+| SessionStart | 必須ファイルの読み込み、状態初期化 |
+| UserPromptSubmit | 手順メモリのマッチング、強制プロトコル |
+| PreToolUse | タスク実行前のセットアップ |
+| PostToolUse | タスク完了後の処理 |
+| Stop | 通知、ログ記録 |
+| SessionEnd | クリーンアップ |
+
+#### 3. 失敗ログ駆動の改善
+
+Claudeが失敗するたびにCLAUDE.mdの失敗ログに記録。同じ失敗パターンを繰り返さないための仕組み。
+
+#### 4. 手順メモリ（Procedural Memory）
+
+成功したツール操作パターンを `.proc.md` ファイルに永続化。hookが自動でマッチングし、類似タスク実行時にサジェスト。
+
+---
+
+## セキュリティ
 
 このリポジトリは public です。`curl | bash` に不安がある場合は、先にスクリプトを確認できます:
 
@@ -77,6 +153,7 @@ bash /tmp/bootstrap.sh
 | `mail-command.md` | `/mail` カスタムコマンド（Gmail返信アシスタント） |
 | `slack-app-manifest.yaml` | Slack App 作成用 Manifest |
 | `versions.env` | ツールバージョン定義 |
+| `config/` | **実運用の設定パターン集**（個人情報除去済み） |
 
 ## 配布前の準備
 
