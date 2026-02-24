@@ -62,6 +62,9 @@ config/
 ├── project/                         # プロジェクトの .claude/ に配置する設定
 │   ├── settings.json                # Hook lifecycle（全6イベント）設定例
 │   ├── CLAUDE.md                    # Plan管理、TDD、失敗ログ等のワークフロー
+│   ├── SOUL.md                      # エージェントの人格・振る舞い定義
+│   ├── SHARED_RULES.md              # 全エージェント共通ルール（Git運用、レビュー、ワークフロー）
+│   ├── REVIEW_GUIDELINES.md         # 資料レビューの目的逆算レビュー原則
 │   ├── rules/                       # 行動ルール
 │   │   ├── self-awareness.md        # LLMの構造的弱点への対策
 │   │   ├── parallel-execution.md    # 並列実行の判断基準
