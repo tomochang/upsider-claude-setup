@@ -1,7 +1,7 @@
 # =============================================================================
-# UPSIDER Claude Code セットアップ ブートストラップ（Windows）
+# Claude Code セットアップ ブートストラップ（Windows）
 #
-# Usage: irm https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main/bootstrap-win.ps1 | iex
+# Usage: irm https://raw.githubusercontent.com/<owner>/<repo>/<ref>/bootstrap-win.ps1 | iex
 #
 # やること: Claude CLI (native) のインストール + セットアップ手順の配置
 # やらないこと: Git, Node.js等 → Claude が全部やる
@@ -10,7 +10,10 @@
 #       ErrorActionPreference = Stop 禁止（未ハンドルエラーで落ちる）
 #       子スクリプトも iex ではなく子プロセスで実行する
 # =============================================================================
-$REPO_RAW = "https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main"
+$setupRepoSlug = if ($env:SETUP_REPO_SLUG) { $env:SETUP_REPO_SLUG } else { "tomochang/upsider-claude-setup" }
+$setupRepoRef  = if ($env:SETUP_REPO_REF)  { $env:SETUP_REPO_REF }  else { "main" }
+$REPO_RAW = "https://raw.githubusercontent.com/$setupRepoSlug/$setupRepoRef"
+$setupDir = if ($env:SETUP_DIR) { $env:SETUP_DIR } else { "$env:USERPROFILE\claude-setup" }
 
 # --- 管理者権限チェック ---
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -28,7 +31,7 @@ if (-not $isAdmin) {
 
 Write-Host ""
 Write-Host "=========================================="
-Write-Host " UPSIDER Claude Code セットアップ"
+Write-Host " Claude Code セットアップ"
 Write-Host "=========================================="
 Write-Host ""
 
@@ -95,7 +98,6 @@ if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
 }
 
 # --- セットアップワークスペース ---
-$setupDir = "$env:USERPROFILE\upsider-setup"
 New-Item -ItemType Directory -Force -Path $setupDir | Out-Null
 
 Write-Host "セットアップ手順をダウンロード中..."
@@ -104,7 +106,7 @@ try {
     Write-Host "準備完了" -ForegroundColor Green
 } catch {
     Write-Host "ダウンロード失敗。手動で配置してください:" -ForegroundColor Red
-    Write-Host "  $REPO_RAW/SETUP_AGENT.md → ~\upsider-setup\CLAUDE.md"
+    Write-Host "  $REPO_RAW/SETUP_AGENT.md → $setupDir\CLAUDE.md"
     return
 }
 
@@ -115,7 +117,7 @@ Write-Host "=========================================="
 Write-Host ""
 Write-Host " 以下を実行してください:" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "    cd ~\upsider-setup; claude" -ForegroundColor White
+Write-Host "    cd $setupDir; claude" -ForegroundColor White
 Write-Host ""
 Write-Host " Claude が起動したら:" -ForegroundColor Cyan
 Write-Host "    セットアップを開始して" -ForegroundColor White

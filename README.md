@@ -1,4 +1,4 @@
-# UPSIDER Claude Code セットアップ
+# Claude Code セットアップテンプレート
 
 Claude Code + Ghostty + tmux の開発環境を自動セットアップ。
 
@@ -7,11 +7,17 @@ Claude Code + Ghostty + tmux の開発環境を自動セットアップ。
 ### Mac — ターミナルで3つコピペするだけ
 
 ```bash
-# 1. ブートストラップ（Claude CLIインストール + ワークスペース作成）
-curl -fsSL https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main/bootstrap-mac.sh | bash
+# 0. 任意: 配布元を変更する場合だけ指定（未指定ならこのリポジトリ）
+export SETUP_REPO_SLUG="<owner>/<repo>"
+export SETUP_REPO_REF="<branch-or-tag>"   # default: main
+export SETUP_DIR="$HOME/claude-setup"     # default: ~/claude-setup
+export AICOS_REPO_URL="https://github.com/tomochang/ai-chief-of-staff.git" # default
+
+# 1. ブートストラップ（Claude CLIインストール + セットアップ手順配置）
+curl -fsSL "https://raw.githubusercontent.com/${SETUP_REPO_SLUG:-tomochang/upsider-claude-setup}/${SETUP_REPO_REF:-main}/bootstrap-mac.sh" | bash
 
 # 2. Claude を起動
-cd ~/upsider-setup && claude
+cd "${SETUP_DIR:-$HOME/claude-setup}" && claude
 
 # 3. Claude に伝える（これだけ手入力）
 セットアップを開始して
@@ -23,12 +29,19 @@ cd ~/upsider-setup && claude
 
 **Step 2.** 以下をコピペして実行:
 ```powershell
-irm https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main/bootstrap-win.ps1 | iex
+$env:SETUP_REPO_SLUG = "<owner/repo>"   # optional
+$env:SETUP_REPO_REF  = "<branch-or-tag>" # optional
+$env:SETUP_DIR       = "$env:USERPROFILE\\claude-setup" # optional
+$env:AICOS_REPO_URL  = "https://github.com/tomochang/ai-chief-of-staff.git" # optional
+$repoSlug = if ($env:SETUP_REPO_SLUG) { $env:SETUP_REPO_SLUG } else { "tomochang/upsider-claude-setup" }
+$repoRef  = if ($env:SETUP_REPO_REF)  { $env:SETUP_REPO_REF }  else { "main" }
+irm "https://raw.githubusercontent.com/$repoSlug/$repoRef/bootstrap-win.ps1" | iex
 ```
 
 **Step 3.** 「準備完了！」と表示されたら、続けて実行:
 ```powershell
-cd ~\upsider-setup; claude
+$setupDir = if ($env:SETUP_DIR) { $env:SETUP_DIR } else { "$env:USERPROFILE\claude-setup" }
+cd $setupDir; claude
 ```
 
 **Step 4.** Claude が起動したら入力:
@@ -41,8 +54,9 @@ cd ~\upsider-setup; claude
 セットアップ完了後の標準状態:
 
 - 各ユーザーの GitHub private リポジトリ（`<github-username>-workspace`）を自動作成
-- `~/clawd` ワークスペースを初期化し、private repo に接続
-- `~/clawd/AGENTS.md` に非エンジニア向けガードレールを自動反映
+- `${WORKSPACE_DIR:-~/clawd}` ワークスペースを初期化し、private repo に接続
+- `${WORKSPACE_DIR:-~/clawd}/AGENTS.md` に非エンジニア向けガードレールを自動反映
+- `ai-chief-of-staff` を `${WORKSPACE_DIR:-~/clawd}/tools/ai-chief-of-staff` に導入し、主要コマンド（`/mail` `/today` `/slack` `/chatwork`）を配置
 
 ---
 
@@ -129,7 +143,7 @@ Claudeが失敗するたびにCLAUDE.mdの失敗ログに記録。同じ失敗�
 
 ```bash
 # Mac: ダウンロードしてから中身を確認 → 実行
-curl -fsSL https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main/bootstrap-mac.sh -o /tmp/bootstrap.sh
+curl -fsSL "https://raw.githubusercontent.com/${SETUP_REPO_SLUG:-tomochang/upsider-claude-setup}/${SETUP_REPO_REF:-main}/bootstrap-mac.sh" -o /tmp/bootstrap.sh
 cat /tmp/bootstrap.sh   # 中身を確認
 bash /tmp/bootstrap.sh
 ```
@@ -139,7 +153,7 @@ bash /tmp/bootstrap.sh
 ```bash
 # main ではなくコミットSHAを固定して取得する
 PINNED_SHA="<commit-sha>"
-curl -fsSL "https://raw.githubusercontent.com/tomochang/upsider-claude-setup/${PINNED_SHA}/bootstrap-mac.sh" -o /tmp/bootstrap.sh
+curl -fsSL "https://raw.githubusercontent.com/${SETUP_REPO_SLUG:-tomochang/upsider-claude-setup}/${PINNED_SHA}/bootstrap-mac.sh" -o /tmp/bootstrap.sh
 bash /tmp/bootstrap.sh
 ```
 
@@ -151,7 +165,7 @@ bash /tmp/bootstrap.sh
 | `bootstrap-win.ps1` | Windows用ブートストラップ（Claude CLI + ワークスペース作成） |
 | `SETUP_AGENT.md` | Claude が読んで自動実行するセットアップ手順（= CLAUDE.md） |
 | `GLOBAL_CLAUDE_MD.md` | グローバル `~/.claude/CLAUDE.md` テンプレート |
-| `dynamic-product-architect-v5.2-ja.md` | UPSIDER Dynamic Product Architect メソドロジー |
+| `dynamic-product-architect-v5.2-ja.md` | Dynamic Product Architect メソドロジー |
 | `git-auto-sync.sh` | ワークスペースの自動 commit / push スクリプト |
 | `mail-command.md` | `/mail` カスタムコマンド（Gmail返信アシスタント） |
 | `slack-app-manifest.yaml` | Slack App 作成用 Manifest |
@@ -164,13 +178,13 @@ bash /tmp/bootstrap.sh
 
 - Google OAuth クライアントは **ユーザーごとに作らない**
 - 以下の **共通1クライアント** を使う:
-  - `UPSIDER-Claude-Setup-Prod`
+  - `<ORG>-Claude-Setup-Prod`
 
 ### 配布ファイル
 
 Slack の `#private_ai_pdm` 固定投稿に以下を置く:
 
-- `UPSIDER-Claude-Setup-Prod.json`（Prodクライアント）
+- `<ORG>-Claude-Setup-Prod.json`（Prodクライアント）
 
 セットアップ中に Claude はこのファイルを既定値として案内する。
 

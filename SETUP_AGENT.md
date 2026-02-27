@@ -1,14 +1,19 @@
-# UPSIDER 環境セットアップエージェント
+# 環境セットアップエージェント
 
-あなたは **UPSIDER の開発環境セットアップアシスタント** です。
+あなたは **開発環境セットアップアシスタント** です。
 このファイルの手順を **上から順に自分で実行** して、ユーザーの環境を自動構築してください。
 
 ---
 
 ## 定数
 
-```
-REPO_RAW=https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main
+```bash
+SETUP_REPO_SLUG=${SETUP_REPO_SLUG:-tomochang/upsider-claude-setup}
+SETUP_REPO_REF=${SETUP_REPO_REF:-main}
+REPO_RAW="https://raw.githubusercontent.com/${SETUP_REPO_SLUG}/${SETUP_REPO_REF}"
+WORKSPACE_DIR=${WORKSPACE_DIR:-$HOME/clawd}
+SETUP_DIR=${SETUP_DIR:-$HOME/claude-setup}
+AICOS_REPO_URL=${AICOS_REPO_URL:-https://github.com/tomochang/ai-chief-of-staff.git}
 ```
 
 ## バージョン定義
@@ -47,14 +52,14 @@ curl -fsSL "${REPO_RAW}/versions.env" -o /tmp/versions.env && source /tmp/versio
 
 ```
 ==========================================
- UPSIDER AI 開発環境セットアップ
+ AI 開発環境セットアップ
 ==========================================
 
 これからセットアップするもの:
   - Claude Code … AIペアプログラマー。コード・レビュー・調査・テストを全部やる
   - Ghostty + tmux … 複数のClaudeを同時に走らせるターミナル環境
   - Slack / Notion / Google連携 … Claudeが直接Slackを読み書き、Notion検索、カレンダー確認できる
-  - Dynamic Product Architect … UPSIDERのプロダクト開発メソドロジー
+  - Dynamic Product Architect … プロダクト開発メソドロジー
 
 所要時間: 約10分
 あなたがやること: ブラウザでログイン数回だけ。残りはClaude（私）が全自動でやります。
@@ -67,7 +72,7 @@ curl -fsSL "${REPO_RAW}/versions.env" -o /tmp/versions.env && source /tmp/versio
  なぜ全員がこの環境を持つべきなのか
 ==========================================
 
-UPSIDERの銀行UIは、モックからAPI・DB・認証を備えたフルサービスに
+社内プロダクトは、モックからAPI・DB・認証を備えたフルサービスに
 たった1日で進化しました。水野さんの寄与をAIが出したのを見ると、
 マジで低いです。つまり、ほぼ全部AIが書いています。
 
@@ -132,7 +137,7 @@ AIは作れます。
    間違えやすいです。必ず「User Token Scopes」の方です。
    （今回はManifestを使うので自動設定されますが、念のため）
 
-5. GitHubのprivateリポジトリにアクセスするにはtomoに招待してもらう
+5. GitHubのprivateリポジトリにアクセスするには管理者に招待してもらう
    必要があります。「repository not found」が出たらアクセス権を確認。
 ```
 
@@ -291,7 +296,7 @@ Slack App を作ります:
 
 1. https://api.slack.com/apps を開く
 2. 「Create New App」→「From an app manifest」を選択
-3. ワークスペースで UPSIDER を選択 →「Next」
+3. 対象ワークスペースを選択 →「Next」
 4. 入力欄を「YAML」タブに切り替え
 5. 以下を貼り付け:
 
@@ -470,13 +475,16 @@ claude mcp add slack -s user \
 # 変数
 PRIVATE_REPO_NAME="{GITHUB_USERNAME}-workspace"
 PRIVATE_REPO_FULL="{GITHUB_USERNAME}/${PRIVATE_REPO_NAME}"
-REPO_RAW="https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main"
+SETUP_REPO_SLUG="${SETUP_REPO_SLUG:-tomochang/upsider-claude-setup}"
+SETUP_REPO_REF="${SETUP_REPO_REF:-main}"
+REPO_RAW="https://raw.githubusercontent.com/${SETUP_REPO_SLUG}/${SETUP_REPO_REF}"
+WORKSPACE_DIR="${WORKSPACE_DIR:-$HOME/clawd}"
 
-# ~/clawd ワークスペース作成
-mkdir -p ~/clawd/output ~/clawd/private ~/clawd/scripts
+# ワークスペース作成
+mkdir -p "$WORKSPACE_DIR/output" "$WORKSPACE_DIR/private" "$WORKSPACE_DIR/scripts"
 
 # 個人privateリポジトリ作成（未作成時のみ）
-cd ~/clawd
+cd "$WORKSPACE_DIR"
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   git init
 fi
@@ -499,12 +507,12 @@ mkdir -p ~/.claude
 test -f ~/.claude/CLAUDE.md || curl -fsSL "${REPO_RAW}/GLOBAL_CLAUDE_MD.md" -o ~/.claude/CLAUDE.md
 
 # Dynamic Product Architect メソドロジー
-test -f ~/clawd/output/dynamic-product-architect-v5.2-ja.md || \
-  curl -fsSL "${REPO_RAW}/dynamic-product-architect-v5.2-ja.md" -o ~/clawd/output/dynamic-product-architect-v5.2-ja.md
+test -f "$WORKSPACE_DIR/output/dynamic-product-architect-v5.2-ja.md" || \
+  curl -fsSL "${REPO_RAW}/dynamic-product-architect-v5.2-ja.md" -o "$WORKSPACE_DIR/output/dynamic-product-architect-v5.2-ja.md"
 
 # 非エンジニア向けガードレール
-if ! grep -q "## Non-Engineer Guardrails" ~/clawd/AGENTS.md 2>/dev/null; then
-  cat >> ~/clawd/AGENTS.md << 'EOF'
+if ! grep -q "## Non-Engineer Guardrails" "$WORKSPACE_DIR/AGENTS.md" 2>/dev/null; then
+  cat >> "$WORKSPACE_DIR/AGENTS.md" << 'EOF'
 
 ## Non-Engineer Guardrails
 
@@ -517,13 +525,31 @@ EOF
 fi
 
 # git-auto-sync スクリプト
-test -f ~/clawd/scripts/git-auto-sync.sh || \
-  curl -fsSL "${REPO_RAW}/git-auto-sync.sh" -o ~/clawd/scripts/git-auto-sync.sh
-chmod +x ~/clawd/scripts/git-auto-sync.sh
-pgrep -f "git-auto-sync.sh" >/dev/null || ~/clawd/scripts/git-auto-sync.sh --daemon
+test -f "$WORKSPACE_DIR/scripts/git-auto-sync.sh" || \
+  curl -fsSL "${REPO_RAW}/git-auto-sync.sh" -o "$WORKSPACE_DIR/scripts/git-auto-sync.sh"
+chmod +x "$WORKSPACE_DIR/scripts/git-auto-sync.sh"
+pgrep -f "git-auto-sync.sh" >/dev/null || "$WORKSPACE_DIR/scripts/git-auto-sync.sh" --daemon
+
+# ai-chief-of-staff の取り込み
+AICOS_REPO_URL="${AICOS_REPO_URL:-https://github.com/tomochang/ai-chief-of-staff.git}"
+AICOS_DIR="$WORKSPACE_DIR/tools/ai-chief-of-staff"
+mkdir -p "$WORKSPACE_DIR/tools" "$WORKSPACE_DIR/skills/schedule-reply" "$WORKSPACE_DIR/hooks" "$WORKSPACE_DIR/scripts"
+if [ -d "$AICOS_DIR/.git" ]; then
+  git -C "$AICOS_DIR" pull --ff-only || true
+else
+  git clone --depth 1 "$AICOS_REPO_URL" "$AICOS_DIR"
+fi
+mkdir -p ~/.claude/commands
+test -f ~/.claude/commands/today.md || cp "$AICOS_DIR/commands/today.md" ~/.claude/commands/today.md
+test -f ~/.claude/commands/slack.md || cp "$AICOS_DIR/commands/slack.md" ~/.claude/commands/slack.md
+test -f ~/.claude/commands/chatwork.md || cp "$AICOS_DIR/commands/chatwork.md" ~/.claude/commands/chatwork.md
+test -f ~/.claude/commands/mail.md || cp "$AICOS_DIR/commands/mail.md" ~/.claude/commands/mail.md
+test -f "$WORKSPACE_DIR/skills/schedule-reply/SKILL.md" || cp "$AICOS_DIR/skills/schedule-reply/SKILL.md" "$WORKSPACE_DIR/skills/schedule-reply/SKILL.md"
+test -f "$WORKSPACE_DIR/hooks/post-action-check.sh" || cp "$AICOS_DIR/hooks/post-action-check.sh" "$WORKSPACE_DIR/hooks/post-action-check.sh"
+test -f "$WORKSPACE_DIR/scripts/calendar-suggest.js" || cp "$AICOS_DIR/scripts/calendar-suggest.js" "$WORKSPACE_DIR/scripts/calendar-suggest.js"
 
 # commit & push
-cd ~/clawd && git add -A && git commit -m "workspace setup" && git push
+cd "$WORKSPACE_DIR" && git add -A && git commit -m "workspace setup" && git push
 ```
 
 ### Windows
@@ -532,10 +558,13 @@ cd ~/clawd && git add -A && git commit -m "workspace setup" && git push
 # 変数
 $PRIVATE_REPO_NAME = "{GITHUB_USERNAME}-workspace"
 $PRIVATE_REPO_FULL = "{GITHUB_USERNAME}/$PRIVATE_REPO_NAME"
-$CLAWD_DIR = "$env:USERPROFILE\clawd"
-$REPO_RAW = "https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main"
+$CLAWD_DIR = if ($env:WORKSPACE_DIR) { $env:WORKSPACE_DIR } else { "$env:USERPROFILE\clawd" }
+$setupRepoSlug = if ($env:SETUP_REPO_SLUG) { $env:SETUP_REPO_SLUG } else { "tomochang/upsider-claude-setup" }
+$setupRepoRef  = if ($env:SETUP_REPO_REF) { $env:SETUP_REPO_REF } else { "main" }
+$REPO_RAW = "https://raw.githubusercontent.com/$setupRepoSlug/$setupRepoRef"
+$AICOS_REPO_URL = if ($env:AICOS_REPO_URL) { $env:AICOS_REPO_URL } else { "https://github.com/tomochang/ai-chief-of-staff.git" }
 
-# ~/clawd ワークスペース作成
+# ワークスペース作成
 New-Item -ItemType Directory -Force -Path "$CLAWD_DIR\output", "$CLAWD_DIR\private", "$CLAWD_DIR\scripts" | Out-Null
 
 cd $CLAWD_DIR
@@ -586,6 +615,22 @@ if (-not (Test-Path $agentsMd) -or -not (Select-String -Path $agentsMd -Pattern 
 - 不明点がある場合は推測で実行せず、選択肢と推奨案を提示して確認する
 "@ | Add-Content $agentsMd
 }
+
+# ai-chief-of-staff の取り込み
+$AicosDir = "$CLAWD_DIR\tools\ai-chief-of-staff"
+New-Item -ItemType Directory -Force -Path "$CLAWD_DIR\tools", "$CLAWD_DIR\skills\schedule-reply", "$CLAWD_DIR\hooks", "$CLAWD_DIR\scripts", "$env:USERPROFILE\.claude\commands" | Out-Null
+if (Test-Path "$AicosDir\.git") {
+    git -C $AicosDir pull --ff-only
+} else {
+    git clone --depth 1 $AICOS_REPO_URL $AicosDir
+}
+if (-not (Test-Path "$env:USERPROFILE\.claude\commands\today.md"))    { Copy-Item "$AicosDir\commands\today.md" "$env:USERPROFILE\.claude\commands\today.md" }
+if (-not (Test-Path "$env:USERPROFILE\.claude\commands\slack.md"))    { Copy-Item "$AicosDir\commands\slack.md" "$env:USERPROFILE\.claude\commands\slack.md" }
+if (-not (Test-Path "$env:USERPROFILE\.claude\commands\chatwork.md")) { Copy-Item "$AicosDir\commands\chatwork.md" "$env:USERPROFILE\.claude\commands\chatwork.md" }
+if (-not (Test-Path "$env:USERPROFILE\.claude\commands\mail.md"))     { Copy-Item "$AicosDir\commands\mail.md" "$env:USERPROFILE\.claude\commands\mail.md" }
+if (-not (Test-Path "$CLAWD_DIR\skills\schedule-reply\SKILL.md"))     { Copy-Item "$AicosDir\skills\schedule-reply\SKILL.md" "$CLAWD_DIR\skills\schedule-reply\SKILL.md" }
+if (-not (Test-Path "$CLAWD_DIR\hooks\post-action-check.sh"))         { Copy-Item "$AicosDir\hooks\post-action-check.sh" "$CLAWD_DIR\hooks\post-action-check.sh" }
+if (-not (Test-Path "$CLAWD_DIR\scripts\calendar-suggest.js"))        { Copy-Item "$AicosDir\scripts\calendar-suggest.js" "$CLAWD_DIR\scripts\calendar-suggest.js" }
 
 # commit & push
 cd $CLAWD_DIR; git add -A; git commit -m "workspace setup"; git push
@@ -648,13 +693,17 @@ CMDEOF
 
 Mac:
 ```bash
-REPO_RAW="https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main"
+SETUP_REPO_SLUG="${SETUP_REPO_SLUG:-tomochang/upsider-claude-setup}"
+SETUP_REPO_REF="${SETUP_REPO_REF:-main}"
+REPO_RAW="https://raw.githubusercontent.com/${SETUP_REPO_SLUG}/${SETUP_REPO_REF}"
 test -f ~/.claude/commands/mail.md || curl -fsSL "${REPO_RAW}/mail-command.md" -o ~/.claude/commands/mail.md
 ```
 
 Windows:
 ```powershell
-$REPO_RAW = "https://raw.githubusercontent.com/tomochang/upsider-claude-setup/main"
+$setupRepoSlug = if ($env:SETUP_REPO_SLUG) { $env:SETUP_REPO_SLUG } else { "tomochang/upsider-claude-setup" }
+$setupRepoRef  = if ($env:SETUP_REPO_REF)  { $env:SETUP_REPO_REF }  else { "main" }
+$REPO_RAW = "https://raw.githubusercontent.com/$setupRepoSlug/$setupRepoRef"
 $dst = "$env:USERPROFILE\.claude\commands\mail.md"
 if (-not (Test-Path $dst)) { Invoke-WebRequest -Uri "$REPO_RAW/mail-command.md" -OutFile $dst }
 ```
@@ -662,7 +711,7 @@ if (-not (Test-Path $dst)) { Invoke-WebRequest -Uri "$REPO_RAW/mail-command.md" 
 → mail.md 内のプレースホルダ（署名、カレンダーID）をユーザーに確認して置換:
 ```
 mail.md をカスタマイズします:
-- GoogleカレンダーID（通常はメールアドレスと同じ。例: taro@up-sider.com）
+- GoogleカレンダーID（通常はメールアドレスと同じ。例: taro@example.com）
 - スキップしたいメール送信元があれば教えてください
 ```
 
@@ -670,10 +719,11 @@ mail.md をカスタマイズします:
 
 Mac:
 ```bash
-if [ -d ~/clawd ]; then
-  mkdir -p ~/clawd/private
+WORKSPACE_DIR="${WORKSPACE_DIR:-$HOME/clawd}"
+if [ -d "$WORKSPACE_DIR" ]; then
+  mkdir -p "$WORKSPACE_DIR/private"
 
-  test -f ~/clawd/private/{USER_NAME_LOWER}_relationships.md || cat > ~/clawd/private/{USER_NAME_LOWER}_relationships.md << 'EOF'
+  test -f "$WORKSPACE_DIR/private/{USER_NAME_LOWER}_relationships.md" || cat > "$WORKSPACE_DIR/private/{USER_NAME_LOWER}_relationships.md" << 'EOF'
 # 人間関係メモ
 ## 社内
 <!-- 名前・役職・やり取りメモを追記 -->
@@ -681,7 +731,7 @@ if [ -d ~/clawd ]; then
 <!-- 名前・会社・関係性・やり取りメモを追記 -->
 EOF
 
-  test -f ~/clawd/private/{USER_NAME_LOWER}_todo.md || cat > ~/clawd/private/{USER_NAME_LOWER}_todo.md << 'EOF'
+  test -f "$WORKSPACE_DIR/private/{USER_NAME_LOWER}_todo.md" || cat > "$WORKSPACE_DIR/private/{USER_NAME_LOWER}_todo.md" << 'EOF'
 # TODO リスト
 ## 直近の予定
 | 日付 | 時間 | 内容 | 備考 |
@@ -990,7 +1040,8 @@ vercel --version 2>/dev/null | head -1 || echo "vercel: 未設定"
 echo "--- Terminal ---"
 test -d /Applications/Ghostty.app && echo "Ghostty: OK" || echo "Ghostty: N/A"
 echo "--- Project ---"
-test -d ~/clawd/.git && echo "workspace: OK" || echo "workspace: 未初期化"
+WORKSPACE_DIR="${WORKSPACE_DIR:-$HOME/clawd}"
+test -d "$WORKSPACE_DIR/.git" && echo "workspace: OK" || echo "workspace: 未初期化"
 echo "=========================================="
 ```
 
@@ -1025,8 +1076,8 @@ Write-Host "=========================================="
 最後に動作確認をします。以下を試してみてください:
 
 1. 新しいターミナルで Claude Code を起動:
-   cd ~/clawd && claude   (Mac)
-   cd ~\clawd; claude     (Windows)
+   cd ${WORKSPACE_DIR:-~/clawd} && claude   (Mac)
+   cd ${WORKSPACE_DIR:-~\clawd}; claude     (Windows)
 
 2. Claude に聞いてみる:
    「#general の最新メッセージを1件見せて」
@@ -1043,7 +1094,7 @@ Write-Host "=========================================="
 ■ 次のステップ:
 1. Ghostty を起動: Command+Space →「Ghostty」
 2. tmux を起動: tmux new -s main
-3. Claude Code: cd ~/clawd && claude
+3. Claude Code: cd ${WORKSPACE_DIR:-~/clawd} && claude
 4. 試しに:「今日のSlackの未読を教えて」
 
 ■ tmux プラグイン（初回のみ）:
@@ -1059,7 +1110,7 @@ Write-Host "=========================================="
 
 ■ 次のステップ:
 1. Windows Terminal を起動
-2. Claude Code: cd ~\clawd; claude
+2. Claude Code: cd ${WORKSPACE_DIR:-~\clawd}; claude
 3. 試しに:「今日のSlackの未読を教えて」
 
 お疲れ様でした！
@@ -1074,13 +1125,13 @@ Write-Host "=========================================="
 | `brew: command not found` | `eval "$(/opt/homebrew/bin/brew shellenv)"` |
 | `nvm: command not found` | `export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh"` |
 | `gh auth login` ブラウザ開かない | 表示URLを手動でブラウザにコピーするよう案内 |
-| `repository not found` | tomoにGitHub招待依頼を案内。Phase 7 スキップ可 |
+| `repository not found` | 管理者にGitHub招待依頼を案内。Phase 7 スキップ可 |
 | `Marketplace not found` | `claude --version` 実行後リトライ |
 | `Please login` / 認証エラー | `claude login` を実行してブラウザ認証 |
 | `npm install` 失敗 | `nvm use $NODE_VERSION` → リトライ |
 | Slack `invalid_auth` | xoxp- トークン全体をコピーし直すよう案内 |
 | Slack Bot Token 使用 | User Token Scopes に変更 → 再Install to Workspace |
-| `gog auth` エラー | `UPSIDER-Claude-Setup-Prod.json` を `credentials.json` にリネーム済みか確認 |
+| `gog auth` エラー | 配布されたOAuth JSONを `credentials.json` にリネーム済みか確認 |
 | 「Google確認されていません」 | 「詳細」→「安全でないページに移動」と案内 |
 | `.zshrc` 変更反映されない | `source ~/.zshrc` |
 | `sed: invalid command` | macOS: `sed -i ''`、Linux: `sed -i` |

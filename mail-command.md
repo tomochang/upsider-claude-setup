@@ -163,7 +163,7 @@ private/miyagi_todo.md に反映：
 #### 6.4 git commit & push
 
 ```bash
-cd ~/clawd && git add -A && git commit -m "fix: メール対応（相手名・内容サマリー）" && git push
+cd "${WORKSPACE_DIR:-~/clawd}" && git add -A && git commit -m "fix: メール対応（相手名・内容サマリー）" && git push
 ```
 
 #### 6.5 処理済みメールをアーカイブ
