@@ -1,204 +1,245 @@
-# Claude Code セットアップテンプレート
+# UPSIDER Claude Setup
 
-Claude Code + Ghostty + tmux の開発環境を自動セットアップ。
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-blue)](#quick-start)
+[![Bootstrap](https://img.shields.io/badge/bootstrap-curl%20%7C%20PowerShell-black)](#quick-start)
+[![Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-7B61FF)](https://docs.anthropic.com/en/docs/claude-code)
 
-## クイックスタート
+Claude Code の初期構築を「人が判断、AIが実行」で最短化するセットアップテンプレートです。
 
-### Mac — ターミナルで3つコピペするだけ
+> **Before:** 環境構築の手順が散らばっていて、Git/GitHub、Claude設定、コマンド導入、運用ルール整備まで毎回ブレる  
+> **After:** `bootstrap` → `claude` → `セットアップを開始して` の3ステップで、実運用可能なワークスペースが立ち上がる
+
+## 何ができるか
+
+- Claude CLI を即利用可能な状態にする（Mac/Windows）
+- `~/clawd`（既定）の作業ワークスペースを初期化
+- GitHub private repo（`<github-username>-workspace`）を自動作成・接続
+- `AGENTS.md` に非エンジニア向けガードレールを追記
+- `git-auto-sync` を導入し、自動コミット/プッシュを起動
+- `ai-chief-of-staff` を連携し、`/today` `/mail` `/slack` `/chatwork` を投入
+- `config/` の実運用テンプレート（global/project/skills/procedures）を参照可能にする
+
+## Quick Start
+
+### Mac（3コマンド）
 
 ```bash
-# 0. 任意: 配布元を変更する場合だけ指定（未指定ならこのリポジトリ）
+# 0) 任意: 配布元/ブランチ/ディレクトリを変える場合だけ指定
 export SETUP_REPO_SLUG="<owner>/<repo>"
-export SETUP_REPO_REF="<branch-or-tag>"   # default: main
-export SETUP_DIR="$HOME/claude-setup"     # default: ~/claude-setup
-export AICOS_REPO_URL="https://github.com/tomochang/ai-chief-of-staff.git" # default
+export SETUP_REPO_REF="<branch-or-tag>"        # default: main
+export SETUP_DIR="$HOME/claude-setup"          # default: ~/claude-setup
+export WORKSPACE_DIR="$HOME/clawd"             # default: ~/clawd
+export AICOS_REPO_URL="https://github.com/tomochang/ai-chief-of-staff.git"  # default
 
-# 1. ブートストラップ（Claude CLIインストール + セットアップ手順配置）
+# 1) ブートストラップ
 curl -fsSL "https://raw.githubusercontent.com/${SETUP_REPO_SLUG:-tomochang/upsider-claude-setup}/${SETUP_REPO_REF:-main}/bootstrap-mac.sh" | bash
 
-# 2. Claude を起動
+# 2) Claude起動
 cd "${SETUP_DIR:-$HOME/claude-setup}" && claude
 
-# 3. Claude に伝える（これだけ手入力）
+# 3) Claudeに入力
 セットアップを開始して
 ```
 
-### Windows — PowerShellで3つコピペするだけ
+### Windows（PowerShell, 管理者）
 
-**Step 1.** PowerShell を**右クリック →「管理者として実行」**で開く
-
-**Step 2.** 以下をコピペして実行:
 ```powershell
-$env:SETUP_REPO_SLUG = "<owner/repo>"   # optional
-$env:SETUP_REPO_REF  = "<branch-or-tag>" # optional
-$env:SETUP_DIR       = "$env:USERPROFILE\\claude-setup" # optional
-$env:AICOS_REPO_URL  = "https://github.com/tomochang/ai-chief-of-staff.git" # optional
+# 0) 任意: 配布元/ブランチ/ディレクトリを変える場合だけ指定
+$env:SETUP_REPO_SLUG = "<owner/repo>"
+$env:SETUP_REPO_REF  = "<branch-or-tag>"
+$env:SETUP_DIR       = "$env:USERPROFILE\claude-setup"
+$env:WORKSPACE_DIR   = "$env:USERPROFILE\clawd"
+$env:AICOS_REPO_URL  = "https://github.com/tomochang/ai-chief-of-staff.git"
+
+# 1) ブートストラップ
 $repoSlug = if ($env:SETUP_REPO_SLUG) { $env:SETUP_REPO_SLUG } else { "tomochang/upsider-claude-setup" }
 $repoRef  = if ($env:SETUP_REPO_REF)  { $env:SETUP_REPO_REF }  else { "main" }
 irm "https://raw.githubusercontent.com/$repoSlug/$repoRef/bootstrap-win.ps1" | iex
-```
 
-**Step 3.** 「準備完了！」と表示されたら、続けて実行:
-```powershell
+# 2) Claude起動
 $setupDir = if ($env:SETUP_DIR) { $env:SETUP_DIR } else { "$env:USERPROFILE\claude-setup" }
 cd $setupDir; claude
-```
 
-**Step 4.** Claude が起動したら入力:
-```
+# 3) Claudeに入力
 セットアップを開始して
 ```
 
-あとは Claude が全部やります。
+## セットアップ後の到達状態
 
-セットアップ完了後の標準状態:
+標準では以下が揃います。
 
-- 各ユーザーの GitHub private リポジトリ（`<github-username>-workspace`）を自動作成
-- `${WORKSPACE_DIR:-~/clawd}` ワークスペースを初期化し、private repo に接続
-- `${WORKSPACE_DIR:-~/clawd}/AGENTS.md` に非エンジニア向けガードレールを自動反映
-- `ai-chief-of-staff` を `${WORKSPACE_DIR:-~/clawd}/tools/ai-chief-of-staff` に導入し、主要コマンド（`/mail` `/today` `/slack` `/chatwork`）を配置
+- ワークスペース: `${WORKSPACE_DIR:-~/clawd}`
+- private repo: `<github-username>-workspace`（GitHub上に作成）
+- 作業用ディレクトリ: `output/`, `private/`, `scripts/`, `tools/`
+- `tools/ai-chief-of-staff` を clone/pull
+- `~/.claude/commands/` に主要コマンドを配置
+  - `today.md`
+  - `mail.md`
+  - `slack.md`
+  - `chatwork.md`
+- `skills/schedule-reply/SKILL.md`, `hooks/post-action-check.sh`, `scripts/calendar-suggest.js` を導入
+- `scripts/git-auto-sync.sh --daemon` が起動
 
----
+## なぜこの構成か
 
-## 設定リファレンス（`config/`）
+### 1. ブートストラップは最小化
 
-実運用で使われている Claude Code の設定パターン集。個人情報・機密情報は除去済み。
+`bootstrap-mac.sh` / `bootstrap-win.ps1` は「Claude CLI導入 + `SETUP_AGENT.md` 配置」だけに絞っています。複雑な分岐や認証は Claude 側に寄せることで、失敗時の復旧経路を一本化しています。
 
-### ディレクトリ構成
+### 2. 実行手順は `SETUP_AGENT.md` に集約
 
-```
-config/
-├── global/                          # ~/.claude/ に配置するグローバル設定
-│   ├── settings.json                # モデル選択、プラグイン、hook設定
-│   └── hooks/
-│       └── cmux-notify.sh           # Stop/Notification 通知フック
-│
-├── project/                         # プロジェクトの .claude/ に配置する設定
-│   ├── settings.json                # Hook lifecycle（全6イベント）設定例
-│   ├── CLAUDE.md                    # Plan管理、TDD、失敗ログ等のワークフロー
-│   ├── SOUL.md                      # エージェントの人格・振る舞い定義
-│   ├── SHARED_RULES.md              # 全エージェント共通ルール（Git運用、レビュー、ワークフロー）
-│   ├── REVIEW_GUIDELINES.md         # 資料レビューの目的逆算レビュー原則
-│   ├── rules/                       # 行動ルール
-│   │   ├── self-awareness.md        # LLMの構造的弱点への対策
-│   │   ├── parallel-execution.md    # 並列実行の判断基準
-│   │   ├── tool-selection.md        # ツール選択の優先順位
-│   │   ├── procedure-replay.md      # 手順メモリの再実行ルール
-│   │   ├── session-start.md         # セッション開始時の必須読み込み
-│   │   ├── calendar-update.md       # エビデンスベースのカレンダー更新
-│   │   ├── email-search.md          # 複数アカウント並列検索
-│   │   ├── pre-send-checklist.md    # 送信前CC確認チェックリスト
-│   │   ├── post-send-checklist.md   # 送信後の後続タスク自動実行
-│   │   └── trigger-workflows.md     # トリガーワード → ワークフロー連携
-│   └── agents/                      # サブエージェント定義
-│       ├── code-reviewer.md         # コードレビュー専門エージェント
-│       ├── code-simplifier.md       # リファクタリング専門エージェント
-│       └── build-validator.md       # ビルド検証専門エージェント
-│
-├── skills/                          # スキル（再利用可能なワークフロー）
-│   └── mail/
-│       └── SKILL.md                 # Gmail 3層アーキテクチャ（判断/実行/データ）
-│
-└── procedures/                      # 手順メモリ（Procedural Memory）
-    ├── CLAUDE.md                    # 手順メモリシステムの説明
-    └── INDEX.md                     # 手順インデックス（hookによる自動マッチング）
-```
+長いセットアップを人間のメモで運用すると再現性が落ちます。`SETUP_AGENT.md` に全フェーズを固定し、AIが上から実行する構造にすることで、環境差分を吸収しやすくしています。
 
-### 設計思想
+### 3. 運用知識は `config/` に分離
 
-#### 1. 3層アーキテクチャ（スキル設計）
+導入手順と運用ルールを分けることで、セットアップ完了後の改善（rules/skills/hooks調整）を安全に行えます。
 
-```
-スキル層   → 判断ルール（何をすべきか）
-プログラム層 → 実行スクリプト（どうやるか）
-データ層   → 状態管理（何が起きたか）
+## アーキテクチャ
+
+```text
+┌──────────────────────────────┐
+│ bootstrap-mac.sh / win.ps1   │
+│  - Claude CLI install         │
+│  - SETUP_AGENT.md 配置        │
+└───────────────┬──────────────┘
+                │
+┌───────────────▼──────────────┐
+│ CLAUDE.md (= SETUP_AGENT.md) │
+│  - 環境検出                  │
+│  - Git/GitHub連携            │
+│  - Workspace初期化           │
+│  - ai-chief-of-staff導入      │
+│  - 最終検証                  │
+└───────────────┬──────────────┘
+                │
+┌───────────────▼──────────────────────────┐
+│ Ready-to-run Workspace                    │
+│  ~/clawd + private repo + commands/hooks │
+└───────────────────────────────────────────┘
 ```
 
-スキルだけに頼らない。プログラムとデータで行動を担保する。
+## 初回セットアップ後の検証
 
-#### 2. Hook Lifecycle
+### Mac
 
-| イベント | 用途 |
-|---------|------|
-| SessionStart | 必須ファイルの読み込み、状態初期化 |
-| UserPromptSubmit | 手順メモリのマッチング、強制プロトコル |
-| PreToolUse | タスク実行前のセットアップ |
-| PostToolUse | タスク完了後の処理 |
-| Stop | 通知、ログ記録 |
-| SessionEnd | クリーンアップ |
+```bash
+claude --version
+gh --version
+gh auth status
+cd "${WORKSPACE_DIR:-$HOME/clawd}" && git remote -v
+ls -1 ~/.claude/commands | rg "^(today|mail|slack|chatwork)\.md$"
+pgrep -af "git-auto-sync.sh"
+```
 
-#### 3. 失敗ログ駆動の改善
+### Windows
 
-Claudeが失敗するたびにCLAUDE.mdの失敗ログに記録。同じ失敗パターンを繰り返さないための仕組み。
+```powershell
+claude --version
+gh --version
+gh auth status
+$ws = if ($env:WORKSPACE_DIR) { $env:WORKSPACE_DIR } else { "$env:USERPROFILE\clawd" }
+cd $ws; git remote -v
+Get-ChildItem "$env:USERPROFILE\.claude\commands" | Where-Object { $_.Name -match '^(today|mail|slack|chatwork)\.md$' }
+Get-Process | Where-Object { $_.ProcessName -match 'git-auto-sync' }
+```
 
-#### 4. 手順メモリ（Procedural Memory）
+## トラブルシューティング
 
-成功したツール操作パターンを `.proc.md` ファイルに永続化。hookが自動でマッチングし、類似タスク実行時にサジェスト。
-
----
+| 症状 | 原因 | 対処 |
+|---|---|---|
+| `claude: command not found` | PATH未反映 | 新しいターミナルを開き直し、`~/.claude/bin`（Mac）または検出された`claude.exe`のパス（Windows）がPATHに入っているか確認 |
+| `repository not found` | private repo作成権限不足 or org権限不足 | `gh auth status`確認、必要なら`gh auth login`を再実行。組織権限が必要な場合は管理者に付与依頼 |
+| `gh repo create` 失敗 | GitHub認証不足 | `gh auth login`後に再実行 |
+| `git push` 失敗 | upstream未設定/認証切れ | `git branch --set-upstream-to origin/main main`、または`gh auth refresh` |
+| `/today` が使えない | commandファイル未配置 | `~/.claude/commands/today.md` の存在確認。なければ `tools/ai-chief-of-staff/commands/` からコピー |
+| `git-auto-sync` が動かない | デーモン未起動 | `"${WORKSPACE_DIR:-$HOME/clawd}/scripts/git-auto-sync.sh" --daemon` を手動実行 |
 
 ## セキュリティ
 
-このリポジトリは public です。`curl | bash` に不安がある場合は、先にスクリプトを確認できます:
+このリポジトリは public です。`curl | bash` が不安な場合は、先にダウンロードして中身を確認してください。
 
 ```bash
-# Mac: ダウンロードしてから中身を確認 → 実行
 curl -fsSL "https://raw.githubusercontent.com/${SETUP_REPO_SLUG:-tomochang/upsider-claude-setup}/${SETUP_REPO_REF:-main}/bootstrap-mac.sh" -o /tmp/bootstrap.sh
-cat /tmp/bootstrap.sh   # 中身を確認
+cat /tmp/bootstrap.sh
 bash /tmp/bootstrap.sh
 ```
 
-固定バージョンで実行したい場合（推奨）:
+固定リビジョンで実行する場合（推奨）:
 
 ```bash
-# main ではなくコミットSHAを固定して取得する
 PINNED_SHA="<commit-sha>"
 curl -fsSL "https://raw.githubusercontent.com/${SETUP_REPO_SLUG:-tomochang/upsider-claude-setup}/${PINNED_SHA}/bootstrap-mac.sh" -o /tmp/bootstrap.sh
 bash /tmp/bootstrap.sh
 ```
 
-## ファイル構成
+注意:
+- シークレットやトークンをこのリポジトリへ保存しない
+- OAuthクライアントJSONなどは安全な社内配布経路で管理する
 
-| ファイル | 役割 |
-|---------|------|
-| `bootstrap-mac.sh` | Mac用ブートストラップ（Claude CLI + ワークスペース作成） |
-| `bootstrap-win.ps1` | Windows用ブートストラップ（Claude CLI + ワークスペース作成） |
-| `SETUP_AGENT.md` | Claude が読んで自動実行するセットアップ手順（= CLAUDE.md） |
-| `GLOBAL_CLAUDE_MD.md` | グローバル `~/.claude/CLAUDE.md` テンプレート |
-| `dynamic-product-architect-v5.2-ja.md` | Dynamic Product Architect メソドロジー |
-| `git-auto-sync.sh` | ワークスペースの自動 commit / push スクリプト |
-| `mail-command.md` | `/mail` カスタムコマンド（Gmail返信アシスタント） |
-| `slack-app-manifest.yaml` | Slack App 作成用 Manifest |
-| `versions.env` | ツールバージョン定義 |
-| `config/` | **実運用の設定パターン集**（個人情報除去済み） |
+## カスタマイズポイント
 
-## 配布前の準備
+### 配布元を差し替える
 
-### OAuth運用方針（固定）
+- `SETUP_REPO_SLUG` を別リポジトリへ変更
+- `SETUP_REPO_REF` で branch/tag/SHA を固定
 
-- Google OAuth クライアントは **ユーザーごとに作らない**
-- 以下の **共通1クライアント** を使う:
-  - `<ORG>-Claude-Setup-Prod`
+### ワークスペース配置を変更する
 
-### 配布ファイル
+- `WORKSPACE_DIR` を指定（例: `~/workspace/team-a`）
 
-Slack の `#private_ai_pdm` 固定投稿に以下を置く:
+### 連携する chief-of-staff を差し替える
 
-- `<ORG>-Claude-Setup-Prod.json`（Prodクライアント）
+- `AICOS_REPO_URL` をフォーク先へ変更
 
-セットアップ中に Claude はこのファイルを既定値として案内する。
+### メールコマンドのみ先行導入する
 
-### 運用ルール（最低限）
+- `mail-command.md` を `~/.claude/commands/mail.md` へ配置して単体運用可能
 
-- 固定投稿は「閲覧権限ありメンバーのみ」に限定
-- 退職・権限変更時は投稿を差し替え、旧ファイルを削除
-- 漏洩疑い時はクライアントシークレットを即再発行し、固定投稿を更新
+## リポジトリ構成
 
-**このリポジトリに secret を含めないこと。**
+| パス | 役割 |
+|---|---|
+| `bootstrap-mac.sh` | macOS向けブートストラップ |
+| `bootstrap-win.ps1` | Windows向けブートストラップ |
+| `SETUP_AGENT.md` | Claudeが実行する本体手順（`CLAUDE.md`として使用） |
+| `GLOBAL_CLAUDE_MD.md` | `~/.claude/CLAUDE.md` のテンプレート |
+| `mail-command.md` | `/mail` コマンド雛形 |
+| `git-auto-sync.sh` | ワークスペース変更の自動commit/push |
+| `versions.env` | Node/NVM/Python のバージョン定義 |
+| `config/` | 実運用テンプレート（global/project/skills/procedures） |
+| `dynamic-product-architect-v5.2-ja.md` | プロダクト設計メソドロジー資料 |
 
-## 所要時間
+## `config/` の使い方
 
-| 条件 | 目安 |
-|------|------|
-| 開発者（Xcode CLT + Homebrew 済み） | 10分 |
-| 非エンジニア（ゼロから） | 15-20分（Xcode CLT待ち含む） |
+`config/` はセットアップ後の運用改善用テンプレートです。
+
+- `config/global/`: `~/.claude/` 相当のグローバル設定
+- `config/project/`: プロジェクトごとの `.claude/` 設定
+- `config/project/memory/failure-log.md`: 失敗ログを `CLAUDE.md` から分離した再発防止ログ
+- `config/skills/`: 再利用ワークフロースキル
+- `config/procedures/`: 手順メモリ（procedural memory）
+
+段階導入がおすすめです。
+
+1. まずは `settings.json` と基本ルールだけ適用
+2. 次に `rules/` と `agents/` を追加
+3. 最後に `skills/` と `procedures/` を接続
+
+## 実運用ポリシー（推奨）
+
+- 変更は小さく分けて反映する
+- セットアップ手順変更時は `SETUP_AGENT.md` を first-class として更新する
+- OSごとの差分を増やしすぎない（可能な限り共通手順へ寄せる）
+- 失敗パターンは `config/project/rules/` に再発防止ルールとして追記する
+
+## 関連ドキュメント
+
+- `SETUP_AGENT.md`: 実行フェーズの詳細
+- `mail-command.md`: Gmail triageコマンド
+- `config/project/CLAUDE.md`: プロジェクト運用ルール
+- `config/project/SHARED_RULES.md`: 共通ルール
+- `config/project/REVIEW_GUIDELINES.md`: レビュー規約
+
+---
+
+改善提案・運用知見はPR歓迎です。特に「初見ユーザーが詰まるポイント」の報告が最も価値があります。
