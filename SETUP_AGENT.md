@@ -366,8 +366,9 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   # nvm-windows は新しいシェルで有効化されるため、PATHを手動追加
   $env:NVM_HOME = "$env:APPDATA\nvm"
   $env:PATH = "$env:NVM_HOME;$env:PATH"
-  nvm install 24.13.0
-  nvm use 24.13.0
+  $nodeVer = if ($env:NODE_VERSION) { $env:NODE_VERSION } else { "24.13.0" }
+  nvm install $nodeVer
+  nvm use $nodeVer
 }
 
 if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
@@ -452,17 +453,28 @@ SLACK_MCP_PATH=$(which slack-mcp-server)
 ```
 
 Windows:
-```bash
-command -v slack-mcp-server || npm install -g @nichochar/slack-mcp-server
-SLACK_MCP_PATH=$(which slack-mcp-server || echo "$(npm root -g)/@nichochar/slack-mcp-server/dist/index.js")
+```powershell
+if (-not (Get-Command slack-mcp-server -ErrorAction SilentlyContinue)) {
+  npm install -g @nichochar/slack-mcp-server
+}
+$npmRoot = npm root -g
+$SLACK_MCP_PATH = Join-Path $npmRoot "@nichochar\slack-mcp-server\dist\index.js"
 ```
 
-登録（共通）:
+登録（Mac）:
 ```bash
 claude mcp add slack -s user \
   -e SLACK_MCP_XOXP_TOKEN={SLACK_TOKEN} \
   -e SLACK_MCP_ADD_MESSAGE_TOOL=true \
   -- "$SLACK_MCP_PATH"
+```
+
+登録（Windows）:
+```powershell
+claude mcp add slack -s user `
+  -e SLACK_MCP_XOXP_TOKEN={SLACK_TOKEN} `
+  -e SLACK_MCP_ADD_MESSAGE_TOOL=true `
+  -- node "$SLACK_MCP_PATH"
 ```
 
 ---
@@ -549,7 +561,12 @@ test -f "$WORKSPACE_DIR/hooks/post-action-check.sh" || cp "$AICOS_DIR/hooks/post
 test -f "$WORKSPACE_DIR/scripts/calendar-suggest.js" || cp "$AICOS_DIR/scripts/calendar-suggest.js" "$WORKSPACE_DIR/scripts/calendar-suggest.js"
 
 # commit & push
-cd "$WORKSPACE_DIR" && git add -A && git commit -m "workspace setup" && git push
+cd "$WORKSPACE_DIR"
+git add -A
+if ! git diff --cached --quiet; then
+  git commit -m "workspace setup"
+fi
+git push
 ```
 
 ### Windows
@@ -633,7 +650,11 @@ if (-not (Test-Path "$CLAWD_DIR\hooks\post-action-check.sh"))         { Copy-Ite
 if (-not (Test-Path "$CLAWD_DIR\scripts\calendar-suggest.js"))        { Copy-Item "$AicosDir\scripts\calendar-suggest.js" "$CLAWD_DIR\scripts\calendar-suggest.js" }
 
 # commit & push
-cd $CLAWD_DIR; git add -A; git commit -m "workspace setup"; git push
+cd $CLAWD_DIR
+git add -A
+$hasChanges = git diff --cached --name-only
+if ($hasChanges) { git commit -m "workspace setup" }
+git push
 ```
 
 ---

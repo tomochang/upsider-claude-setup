@@ -127,7 +127,7 @@ claude --version
 gh --version
 gh auth status
 cd "${WORKSPACE_DIR:-$HOME/clawd}" && git remote -v
-ls -1 ~/.claude/commands | rg "^(today|mail|slack|chatwork)\.md$"
+ls -1 ~/.claude/commands | grep -E "^(today|mail|slack|chatwork)\.md$"
 pgrep -af "git-auto-sync.sh"
 ```
 
